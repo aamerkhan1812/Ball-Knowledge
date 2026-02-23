@@ -1,0 +1,101 @@
+match_id,date,season,league_id,home_team,away_team,league_weight,is_knockout,is_derby,rank_diff,points_gap,home_form,away_form,is_relegation_battle,is_title_race,is_late_season,search_term,target_hype
+865411,2022-06-21,2022,2,La Fiorita,Inter Club d'Escaldes,1.5,0,0,0,0,7,7,0,0,0,La Fiorita vs Inter Club d'Escaldes,0.0
+865410,2022-06-21,2022,2,FC Levadia Tallinn,Vikingur Reykjavik,1.5,0,0,0,0,7,7,0,0,0,FC Levadia Tallinn vs Vikingur Reykjavik,0.0
+871876,2022-06-24,2022,2,Inter Club d'Escaldes,Vikingur Reykjavik,1.5,0,0,0,0,7,7,0,0,0,Inter Club d'Escaldes vs Vikingur Reykjavik,0.0
+866847,2022-07-05,2022,2,Shamrock Rovers,Hibernians,1.5,0,0,0,0,7,7,0,0,0,Shamrock Rovers vs Hibernians,0.0
+866839,2022-07-05,2022,2,Ballkani,FK Zalgiris Vilnius,1.5,0,0,0,0,7,7,0,0,0,Ballkani vs FK Zalgiris Vilnius,0.0
+866845,2022-07-05,2022,2,The New Saints,Linfield,1.5,0,0,0,0,7,7,0,0,0,The New Saints vs Linfield,0.0
+866851,2022-07-05,2022,2,Shkupi 1927,Lincoln Red Imps FC,1.5,0,0,0,0,7,7,0,0,0,Shkupi 1927 vs Lincoln Red Imps FC,0.0
+866833,2022-07-05,2022,2,Ludogorets,Sutjeska,1.5,0,0,0,0,7,7,0,0,0,Ludogorets vs Sutjeska,0.0
+878836,2022-07-05,2022,2,Malmo FF,Vikingur Reykjavik,1.5,0,0,0,0,7,7,0,0,0,Malmo FF vs Vikingur Reykjavik,0.0
+866829,2022-07-05,2022,2,Pyunik Yerevan,CFR 1907 Cluj,1.5,0,0,0,0,7,7,0,0,0,Pyunik Yerevan vs CFR 1907 Cluj,0.0
+866849,2022-07-05,2022,2,Lech Poznan,Qarabag,1.5,0,0,0,0,7,7,0,0,0,Lech Poznan vs Qarabag,0.0
+866837,2022-07-06,2022,2,FK Tobol Kostanay,Ferencvarosi TC,1.5,0,0,0,0,7,7,0,0,0,FK Tobol Kostanay vs Ferencvarosi TC,0.0
+866843,2022-07-06,2022,2,Bodo/Glimt,KI Klaksvik,1.5,0,0,0,0,7,7,0,0,0,Bodo/Glimt vs KI Klaksvik,0.0
+866841,2022-07-06,2022,2,HJK helsinki,Rīgas FS,1.5,0,0,0,0,7,7,0,0,0,HJK helsinki vs Rīgas FS,0.0
+866835,2022-07-06,2022,2,F91 Dudelange,Tirana,1.5,0,0,0,0,7,7,0,0,0,F91 Dudelange vs Tirana,0.0
+866853,2022-07-06,2022,2,Zrinjski,Sheriff Tiraspol,1.5,0,0,0,0,7,7,0,0,0,Zrinjski vs Sheriff Tiraspol,0.0
+866831,2022-07-06,2022,2,Maribor,Shakhter Soligorsk,1.5,0,0,0,0,7,7,0,0,0,Maribor vs Shakhter Soligorsk,0.0
+866855,2022-07-06,2022,2,Slovan Bratislava,Dinamo Batumi,1.5,0,0,0,0,7,7,0,0,0,Slovan Bratislava vs Dinamo Batumi,0.0
+866836,2022-07-12,2022,2,Tirana,F91 Dudelange,1.5,0,0,0,0,7,7,0,0,0,Tirana vs F91 Dudelange,0.0
+866834,2022-07-12,2022,2,Sutjeska,Ludogorets,1.5,0,0,0,0,7,7,0,0,0,Sutjeska vs Ludogorets,0.0
+866848,2022-07-12,2022,2,Hibernians,Shamrock Rovers,1.5,0,0,0,0,7,7,0,0,0,Hibernians vs Shamrock Rovers,0.0
+866854,2022-07-12,2022,2,Sheriff Tiraspol,Zrinjski,1.5,0,0,0,0,7,7,0,0,0,Sheriff Tiraspol vs Zrinjski,0.0
+878837,2022-07-12,2022,2,Vikingur Reykjavik,Malmo FF,1.5,0,0,0,0,7,7,0,0,0,Vikingur Reykjavik vs Malmo FF,0.0
+866840,2022-07-12,2022,2,FK Zalgiris Vilnius,Ballkani,1.5,0,0,0,0,7,7,0,0,0,FK Zalgiris Vilnius vs Ballkani,0.0
+866850,2022-07-12,2022,2,Qarabag,Lech Poznan,1.5,0,0,0,0,7,7,0,0,0,Qarabag vs Lech Poznan,0.0
+866842,2022-07-12,2022,2,Rīgas FS,HJK helsinki,1.5,0,0,0,0,7,7,0,0,0,Rīgas FS vs HJK helsinki,0.0
+866852,2022-07-12,2022,2,Lincoln Red Imps FC,Shkupi 1927,1.5,0,0,0,0,7,7,0,0,0,Lincoln Red Imps FC vs Shkupi 1927,0.0
+866832,2022-07-13,2022,2,Shakhter Soligorsk,Maribor,1.5,0,0,0,0,7,7,0,0,0,Shakhter Soligorsk vs Maribor,0.0
+866844,2022-07-13,2022,2,KI Klaksvik,Bodo/Glimt,1.5,0,0,0,0,7,7,0,0,0,KI Klaksvik vs Bodo/Glimt,0.0
+866856,2022-07-13,2022,2,Dinamo Batumi,Slovan Bratislava,1.5,0,0,0,0,7,7,0,0,0,Dinamo Batumi vs Slovan Bratislava,0.0
+866838,2022-07-13,2022,2,Ferencvarosi TC,FK Tobol Kostanay,1.5,0,0,0,0,7,7,0,0,0,Ferencvarosi TC vs FK Tobol Kostanay,0.0
+866830,2022-07-13,2022,2,CFR 1907 Cluj,Pyunik Yerevan,1.5,0,0,0,0,7,7,0,0,0,CFR 1907 Cluj vs Pyunik Yerevan,0.0
+866846,2022-07-13,2022,2,Linfield,The New Saints,1.5,0,0,0,0,7,7,0,0,0,Linfield vs The New Saints,0.0
+897754,2022-07-19,2022,2,Dinamo Zagreb,Shkupi 1927,1.5,0,0,0,0,7,7,0,0,0,Dinamo Zagreb vs Shkupi 1927,0.0
+897742,2022-07-19,2022,2,Linfield,Bodo/Glimt,1.5,0,0,0,0,7,7,0,0,0,Linfield vs Bodo/Glimt,0.0
+867215,2022-07-19,2022,2,FC Midtjylland,AEK Larnaca,1.5,0,0,0,0,7,7,0,0,0,FC Midtjylland vs AEK Larnaca,0.0
+897752,2022-07-19,2022,2,Ludogorets,Shamrock Rovers,1.5,0,0,0,0,7,7,0,0,0,Ludogorets vs Shamrock Rovers,0.0
+897748,2022-07-19,2022,2,FK Zalgiris Vilnius,Malmo FF,1.5,0,0,0,0,7,7,0,0,0,FK Zalgiris Vilnius vs Malmo FF,0.0
+897750,2022-07-19,2022,2,Qarabag,FC Zurich,1.5,0,0,0,0,7,7,0,0,0,Qarabag vs FC Zurich,0.0
+897746,2022-07-19,2022,2,Pyunik Yerevan,F91 Dudelange,1.5,0,0,0,0,7,7,0,0,0,Pyunik Yerevan vs F91 Dudelange,0.0
+897756,2022-07-20,2022,2,HJK helsinki,Plzen,1.5,0,0,0,0,7,7,0,0,0,HJK helsinki vs Plzen,0.0
+867213,2022-07-20,2022,2,Maccabi Haifa,Olympiakos Piraeus,1.5,0,0,0,0,7,7,0,0,0,Maccabi Haifa vs Olympiakos Piraeus,0.0
+867217,2022-07-20,2022,2,Dynamo Kyiv,Fenerbahçe,1.5,0,0,0,0,7,7,0,0,0,Dynamo Kyiv vs Fenerbahçe,0.0
+897740,2022-07-20,2022,2,Ferencvarosi TC,Slovan Bratislava,1.5,0,0,0,0,7,7,0,0,0,Ferencvarosi TC vs Slovan Bratislava,0.0
+897744,2022-07-20,2022,2,Maribor,Sheriff Tiraspol,1.5,0,0,0,0,7,7,0,0,0,Maribor vs Sheriff Tiraspol,0.0
+867216,2022-07-26,2022,2,AEK Larnaca,FC Midtjylland,1.5,0,0,0,0,7,7,0,0,0,AEK Larnaca vs FC Midtjylland,0.0
+897757,2022-07-26,2022,2,Plzen,HJK helsinki,1.5,0,0,0,0,7,7,0,0,0,Plzen vs HJK helsinki,0.0
+897745,2022-07-26,2022,2,Sheriff Tiraspol,Maribor,1.5,0,0,0,0,7,7,0,0,0,Sheriff Tiraspol vs Maribor,0.0
+897747,2022-07-26,2022,2,F91 Dudelange,Pyunik Yerevan,1.5,0,0,0,0,7,7,0,0,0,F91 Dudelange vs Pyunik Yerevan,0.0
+897753,2022-07-26,2022,2,Shamrock Rovers,Ludogorets,1.5,0,0,0,0,7,7,0,0,0,Shamrock Rovers vs Ludogorets,0.0
+897755,2022-07-26,2022,2,Shkupi 1927,Dinamo Zagreb,1.5,0,0,0,0,7,7,0,0,0,Shkupi 1927 vs Dinamo Zagreb,0.0
+897741,2022-07-27,2022,2,Slovan Bratislava,Ferencvarosi TC,1.5,0,0,0,0,7,7,0,0,0,Slovan Bratislava vs Ferencvarosi TC,0.0
+897751,2022-07-27,2022,2,FC Zurich,Qarabag,1.5,0,0,0,0,7,7,0,0,0,FC Zurich vs Qarabag,0.0
+867214,2022-07-27,2022,2,Olympiakos Piraeus,Maccabi Haifa,1.5,0,0,0,0,7,7,0,0,0,Olympiakos Piraeus vs Maccabi Haifa,0.0
+897749,2022-07-27,2022,2,Malmo FF,FK Zalgiris Vilnius,1.5,0,0,0,0,7,7,0,0,0,Malmo FF vs FK Zalgiris Vilnius,0.0
+897743,2022-07-27,2022,2,Bodo/Glimt,Linfield,1.5,0,0,0,0,7,7,0,0,0,Bodo/Glimt vs Linfield,0.0
+867218,2022-07-27,2022,2,Fenerbahçe,Dynamo Kyiv,1.5,0,0,0,0,7,7,0,0,0,Fenerbahçe vs Dynamo Kyiv,0.0
+923125,2022-08-02,2022,2,Sheriff Tiraspol,Plzen,1.5,0,0,0,0,7,7,0,0,0,Sheriff Tiraspol vs Plzen,0.0
+923123,2022-08-02,2022,2,Ludogorets,Dinamo Zagreb,1.5,0,0,0,0,7,7,0,0,0,Ludogorets vs Dinamo Zagreb,0.0
+901884,2022-08-02,2022,2,Monaco,PSV Eindhoven,1.5,0,0,0,0,7,7,0,0,0,Monaco vs PSV Eindhoven,0.0
+901886,2022-08-02,2022,2,Union St. Gilloise,Rangers,1.5,0,0,0,0,7,7,0,0,0,Union St. Gilloise vs Rangers,0.0
+923127,2022-08-02,2022,2,Benfica,FC Midtjylland,1.5,0,0,0,0,7,7,0,0,0,Benfica vs FC Midtjylland,0.0
+924405,2022-08-03,2022,2,Dynamo Kyiv,Sturm Graz,1.5,0,0,0,0,7,7,0,0,0,Dynamo Kyiv vs Sturm Graz,0.0
+924401,2022-08-03,2022,2,Maccabi Haifa,Apollon Limassol,1.5,0,0,0,0,7,7,0,0,0,Maccabi Haifa vs Apollon Limassol,0.0
+923129,2022-08-03,2022,2,FK Crvena Zvezda,Pyunik Yerevan,1.5,0,0,0,0,7,7,0,0,0,FK Crvena Zvezda vs Pyunik Yerevan,0.0
+924399,2022-08-03,2022,2,Bodo/Glimt,FK Zalgiris Vilnius,1.5,0,0,0,0,7,7,0,0,0,Bodo/Glimt vs FK Zalgiris Vilnius,0.0
+924403,2022-08-03,2022,2,Qarabag,Ferencvarosi TC,1.5,0,0,0,0,7,7,0,0,0,Qarabag vs Ferencvarosi TC,0.0
+867946,2022-08-05,2022,39,Crystal Palace,Arsenal,1.0,0,0,0,0,7,7,0,0,0,Crystal Palace vs Arsenal,23.0
+871164,2022-08-05,2022,78,Eintracht Frankfurt,Bayern Munich,1.0,0,0,0,0,7,7,0,0,0,Eintracht Frankfurt vs Bayern Munich,0.0
+871169,2022-08-06,2022,78,VfL Wolfsburg,Werder Bremen,1.0,0,0,0,0,7,7,0,0,0,VfL Wolfsburg vs Werder Bremen,0.0
+867949,2022-08-06,2022,39,Leeds,Wolves,1.0,0,0,0,0,7,7,0,0,0,Leeds vs Wolves,3.0
+867952,2022-08-06,2022,39,Tottenham,Southampton,1.0,0,0,0,0,7,7,0,0,0,Tottenham vs Southampton,11.0
+867948,2022-08-06,2022,39,Bournemouth,Aston Villa,1.0,0,0,0,0,7,7,0,0,0,Bournemouth vs Aston Villa,3.0
+867951,2022-08-06,2022,39,Newcastle,Nottingham Forest,1.0,0,0,0,0,7,7,0,0,0,Newcastle vs Nottingham Forest,1.0
+867947,2022-08-06,2022,39,Fulham,Liverpool,1.0,0,0,0,0,7,7,0,0,0,Fulham vs Liverpool,39.0
+871165,2022-08-06,2022,78,Borussia Dortmund,Bayer Leverkusen,1.0,0,0,0,0,7,7,0,0,0,Borussia Dortmund vs Bayer Leverkusen,0.0
+871166,2022-08-06,2022,78,Union Berlin,Hertha Berlin,1.0,0,0,0,0,7,7,0,0,0,Union Berlin vs Hertha Berlin,0.0
+867953,2022-08-06,2022,39,Everton,Chelsea,1.0,0,0,0,0,7,7,0,0,0,Everton vs Chelsea,20.0
+871171,2022-08-06,2022,78,FC Augsburg,SC Freiburg,1.0,0,0,0,0,7,7,0,0,0,FC Augsburg vs SC Freiburg,0.0
+871168,2022-08-06,2022,78,Borussia Monchengladbach,1899 Hoffenheim,1.0,0,0,0,0,7,7,0,0,0,Borussia Monchengladbach vs 1899 Hoffenheim,0.0
+871170,2022-08-06,2022,78,Vfl Bochum,FSV Mainz 05,1.0,0,0,0,0,7,7,0,0,0,Vfl Bochum vs FSV Mainz 05,0.0
+867955,2022-08-07,2022,39,West Ham,Manchester City,1.0,0,0,0,0,7,7,0,0,0,West Ham vs Manchester City,1.0
+867950,2022-08-07,2022,39,Leicester,Brentford,1.0,0,0,0,0,7,7,0,0,0,Leicester vs Brentford,4.0
+867954,2022-08-07,2022,39,Manchester United,Brighton,1.0,0,0,0,0,7,7,0,0,0,Manchester United vs Brighton,4.0
+871172,2022-08-07,2022,78,VfB Stuttgart,RB Leipzig,1.0,0,0,0,0,7,7,0,0,0,VfB Stuttgart vs RB Leipzig,1.0
+871167,2022-08-07,2022,78,1. FC Köln,FC Schalke 04,1.0,0,0,0,0,7,7,0,0,0,1. FC Köln vs FC Schalke 04,0.0
+924400,2022-08-09,2022,2,FK Zalgiris Vilnius,Bodo/Glimt,1.5,0,0,0,0,7,7,0,0,0,FK Zalgiris Vilnius vs Bodo/Glimt,0.0
+923126,2022-08-09,2022,2,Plzen,Sheriff Tiraspol,1.5,0,0,0,0,7,7,0,0,0,Plzen vs Sheriff Tiraspol,0.0
+924402,2022-08-09,2022,2,Apollon Limassol,Maccabi Haifa,1.5,0,0,0,0,7,7,0,0,0,Apollon Limassol vs Maccabi Haifa,0.0
+923130,2022-08-09,2022,2,Pyunik Yerevan,FK Crvena Zvezda,1.5,0,0,0,0,7,7,0,0,0,Pyunik Yerevan vs FK Crvena Zvezda,0.0
+923128,2022-08-09,2022,2,FC Midtjylland,Benfica,1.5,0,0,0,0,7,7,0,0,0,FC Midtjylland vs Benfica,0.0
+923124,2022-08-09,2022,2,Dinamo Zagreb,Ludogorets,1.5,0,0,0,0,7,7,0,0,0,Dinamo Zagreb vs Ludogorets,0.0
+924404,2022-08-09,2022,2,Ferencvarosi TC,Qarabag,1.5,0,0,0,0,7,7,0,0,0,Ferencvarosi TC vs Qarabag,0.0
+901885,2022-08-09,2022,2,PSV Eindhoven,Monaco,1.5,0,0,0,0,7,7,0,0,0,PSV Eindhoven vs Monaco,0.0
+924406,2022-08-09,2022,2,Sturm Graz,Dynamo Kyiv,1.5,0,0,0,0,7,7,0,0,0,Sturm Graz vs Dynamo Kyiv,0.0
+901887,2022-08-09,2022,2,Rangers,Union St. Gilloise,1.5,0,0,0,0,7,7,0,0,0,Rangers vs Union St. Gilloise,0.0
+877947,2022-08-12,2022,140,Osasuna,Sevilla,1.0,0,0,0,0,7,7,0,0,0,Osasuna vs Sevilla,2.0
+871176,2022-08-12,2022,78,SC Freiburg,Borussia Dortmund,1.0,0,0,0,0,7,7,0,0,0,SC Freiburg vs Borussia Dortmund,0.0
+867962,2022-08-13,2022,39,Manchester City,Bournemouth,1.0,0,0,0,0,7,7,0,0,0,Manchester City vs Bournemouth,1.0
+871175,2022-08-13,2022,78,RB Leipzig,1. FC Köln,1.0,0,0,0,0,7,7,0,0,0,RB Leipzig vs 1. FC Köln,0.0
