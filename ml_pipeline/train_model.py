@@ -82,8 +82,13 @@ def train_xgboost():
     ]
             
     X = df[features]
-    y = df["target_hype"]
+    y_raw = df["target_hype"]
     seasons = df["season"]
+    
+    # Scale the highly zero-skewed Google Trends outputs to a logical 10-100 score distribution
+    from sklearn.preprocessing import MinMaxScaler
+    scaler = MinMaxScaler(feature_range=(10, 100))
+    y = scaler.fit_transform(y_raw.values.reshape(-1, 1)).flatten()
     
     # Time-based split: Train on <= 2022, Test on >= 2023
     train_mask = seasons <= 2022
@@ -142,7 +147,7 @@ def train_xgboost():
         logger.info(f"{f}: {imp:.4f}")
         
     # Save Model
-    model_path = "../backend/ml_model_elite.json"
+    model_path = "backend/ml_model_elite.json"
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     best_model.save_model(model_path)
     logger.info(f"Optimal elite model firmly saved to {model_path}")

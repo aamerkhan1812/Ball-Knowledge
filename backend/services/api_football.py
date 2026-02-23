@@ -25,7 +25,39 @@ class FootballAPI:
             4,    # Euro Championship
             9,    # Copa America
         ]
+        
+        self.standings_cache = {}
 
+    def get_standings(self, league_id: int, season: int):
+        """Fetch and cache standings for a given league and season to prevent rate limits."""
+        cache_key = f"{league_id}_{season}"
+        if cache_key in self.standings_cache:
+            return self.standings_cache[cache_key]
+            
+        url = f"{self.base_url}/standings"
+        querystring = {"league": league_id, "season": season}
+        
+        try:
+            response = requests.get(url, headers=self.headers, params=querystring)
+            response.raise_for_status()
+            data = response.json()
+            
+            team_stats = {}
+            if "response" in data and len(data["response"]) > 0:
+                standings = data["response"][0]["league"]["standings"][0]
+                for s in standings:
+                    team_name = s["team"]["name"]
+                    team_stats[team_name] = {
+                        "rank": s["rank"],
+                        "points": s["points"],
+                        "form": s.get("form", "") or ""
+                    }
+                    
+            self.standings_cache[cache_key] = team_stats
+            return team_stats
+        except Exception as e:
+            return {}
+            
     def get_fixtures_by_date(self, date: str = None):
         """Fetch fixtures for a given date (YYYY-MM-DD). Defaults to today."""
         if not date:

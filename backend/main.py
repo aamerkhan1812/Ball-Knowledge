@@ -19,7 +19,12 @@ api = FootballAPI()
 scorer = MatchScorer()
 
 @app.get("/api/matches/today")
-async def get_todays_matches(date: str = None):
+async def get_todays_matches(
+    date: str = None, 
+    favorite_team: str = None,
+    prefers_goals: bool = False,
+    prefers_tactical: bool = False
+):
     # If no date is provided, FootballAPI will default to today
     fixtures = api.get_fixtures_by_date(date)
     
@@ -28,8 +33,15 @@ async def get_todays_matches(date: str = None):
     
     matches = fixtures.get("response", [])
     
+    # Setup user preferences
+    prefs = {
+        "favorite_team": favorite_team,
+        "prefers_goals": prefers_goals,
+        "prefers_tactical": prefers_tactical
+    }
+    
     # Process and score matches
-    scored_matches = scorer.score_matches(matches)
+    scored_matches = scorer.score_matches(matches, api, prefs=prefs)
     
     return {"status": "success", "total_matches_checked": len(matches), "matches": scored_matches}
 
