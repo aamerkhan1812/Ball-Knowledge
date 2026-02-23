@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+backend/venv/
+
+# Environment files
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Logs and runtime artifacts
+*.log
+backend/logs/
+backend/data/*.db
+
+# Model/data artifacts
+backend/ml_model_elite.json
+data/*.csv
+data/*.bak
+!data/.gitkeep
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+
+# OS / editor
+.DS_Store
+Thumbs.db
