@@ -69,6 +69,7 @@ python ml_pipeline/evaluate_model.py
 - Backend uses only `API_SPORTS_KEY` (single key).
 - Upstream API calls are restricted to **today + tomorrow** and filtered to a rolling upcoming window (default 20h); historical upstream fetches are blocked.
 - A hard local API budget (`MAX_DAILY_API_CALLS`, default `25`) is enforced and resets daily.
+- Strict daily cache mode fetches each date at most once/day (`SINGLE_FETCH_PER_DATE_PER_DAY=true`).
 - Fixtures, standings, and known logos are cached locally in `backend/data/*.json`.
 - Request throttling is enabled via `MIN_REQUEST_INTERVAL_SECONDS` (default `1`).
 

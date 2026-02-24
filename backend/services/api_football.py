@@ -101,6 +101,9 @@ class FootballAPI:
         self.default_window_hours = _env_int("UPCOMING_WINDOW_HOURS", default=20, minimum=1, maximum=48)
         self.min_window_matches = _env_int("MIN_WINDOW_MATCHES", default=4, minimum=1, maximum=20)
         self.window_extension_hours = _env_int("WINDOW_EXTENSION_HOURS", default=4, minimum=0, maximum=24)
+        self.single_fetch_per_date_per_day = _env_flag(
+            "SINGLE_FETCH_PER_DATE_PER_DAY", default=True
+        )
         self.max_daily_api_calls = _env_int("MAX_DAILY_API_CALLS", default=25, minimum=1, maximum=500)
         self.fixture_cache_refresh_minutes = _env_int(
             "FIXTURE_CACHE_REFRESH_MINUTES", default=90, minimum=5, maximum=720
@@ -731,6 +734,19 @@ class FootballAPI:
         age = dt.datetime.now(dt.UTC) - last_attempt
         return max(0.0, age.total_seconds() / 60.0)
 
+    def _date_attempted_today(self, date: str) -> bool:
+        meta = self.fixtures_meta.get(date)
+        if not isinstance(meta, dict):
+            return False
+
+        last_attempt = self._parse_iso_datetime(
+            meta.get("last_attempt_at") or meta.get("updated_at")
+        )
+        if last_attempt is None:
+            return False
+
+        return last_attempt.date() == dt.datetime.now(dt.UTC).date()
+
     def _update_fixtures_meta(
         self,
         date: str,
@@ -779,6 +795,10 @@ class FootballAPI:
         if date in self.force_refresh_dates:
             self.force_refresh_dates.discard(date)
             return True
+
+        # Strict cache mode: only one live fetch attempt per date per day.
+        if self.single_fetch_per_date_per_day and self._date_attempted_today(date):
+            return False
 
         if has_cache and self._remaining_api_budget() < len(self.target_leagues):
             return False

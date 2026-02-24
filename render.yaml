@@ -24,6 +24,8 @@ services:
         value: "4"
       - key: WINDOW_EXTENSION_HOURS
         value: "4"
+      - key: SINGLE_FETCH_PER_DATE_PER_DAY
+        value: "true"
       - key: MAX_DAILY_API_CALLS
         value: "25"
       - key: FILTER_TARGET_LEAGUES
