@@ -41,7 +41,13 @@ def _env_int(name: str, default: int, minimum: int, maximum: int) -> int:
     return max(minimum, min(maximum, value))
 
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name, str(default)).strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
 DEFAULT_WINDOW_HOURS = _env_int("UPCOMING_WINDOW_HOURS", default=20, minimum=1, maximum=48)
+LIVE_FETCH_ON_REQUEST = _env_flag("LIVE_FETCH_ON_REQUEST", default=False)
 
 
 class UserProfileResponse(BaseModel):
@@ -118,6 +124,9 @@ async def readyz() -> dict[str, Any]:
         "api_daily_used": budget["used"],
         "api_daily_remaining": budget["remaining"],
         "api_budget_date": budget["date"],
+        "live_fetch_on_request": LIVE_FETCH_ON_REQUEST,
+        "cache_backend": "postgres" if api.store.use_postgres else "file",
+        "cache_database_configured": bool(api.cache_database_url),
     }
 
 
@@ -152,9 +161,12 @@ async def get_todays_matches(
             ) from exc
 
     fixtures = (
-        api.get_fixtures_by_date(date)
+        api.get_fixtures_by_date(date, allow_live_refresh=LIVE_FETCH_ON_REQUEST)
         if date
-        else api.get_fixtures_in_window(window_hours=window_hours)
+        else api.get_fixtures_in_window(
+            window_hours=window_hours,
+            allow_live_refresh=LIVE_FETCH_ON_REQUEST,
+        )
     )
 
     matches = fixtures.get("response", [])
@@ -194,7 +206,12 @@ async def get_todays_matches(
         increment_interactions=True,
     )
 
-    scored_matches = scorer.score_matches(matches, api, prefs=user_profile)
+    scored_matches = scorer.score_matches(
+        matches,
+        api,
+        prefs=user_profile,
+        allow_live_refresh=LIVE_FETCH_ON_REQUEST,
+    )
     response_status = "degraded" if not matches and deduped_warnings else "success"
 
     return MatchesResponse(

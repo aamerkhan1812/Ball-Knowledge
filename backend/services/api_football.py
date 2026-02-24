@@ -1,7 +1,6 @@
 ﻿from __future__ import annotations
 
 import datetime as dt
-import json
 import os
 import time
 from typing import Any
@@ -9,6 +8,10 @@ from typing import Any
 import requests
 from dotenv import load_dotenv
 from loguru import logger
+try:
+    from backend.services.persistent_store import PersistentStore
+except ModuleNotFoundError:
+    from services.persistent_store import PersistentStore
 
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 load_dotenv(env_path)
@@ -90,6 +93,18 @@ def _summarize_live_error(raw_error: str) -> str:
     return f"{', '.join(_dedupe_text(reasons))}."
 
 
+def _is_daily_limit_error_text(raw_error: str) -> bool:
+    text = str(raw_error or "").strip().lower()
+    if not text:
+        return False
+    return (
+        "request limit" in text
+        or "daily api call budget reached" in text
+        or "429" in text
+        or "too many requests" in text
+    )
+
+
 class FootballAPI:
     def __init__(self) -> None:
         self.api_key = os.getenv("API_SPORTS_KEY", "").strip()
@@ -101,6 +116,9 @@ class FootballAPI:
         self.default_window_hours = _env_int("UPCOMING_WINDOW_HOURS", default=20, minimum=1, maximum=48)
         self.min_window_matches = _env_int("MIN_WINDOW_MATCHES", default=4, minimum=1, maximum=20)
         self.window_extension_hours = _env_int("WINDOW_EXTENSION_HOURS", default=4, minimum=0, maximum=24)
+        self.single_fetch_per_date_per_day = _env_flag(
+            "SINGLE_FETCH_PER_DATE_PER_DAY", default=True
+        )
         self.max_daily_api_calls = _env_int("MAX_DAILY_API_CALLS", default=25, minimum=1, maximum=500)
         self.fixture_cache_refresh_minutes = _env_int(
             "FIXTURE_CACHE_REFRESH_MINUTES", default=90, minimum=5, maximum=720
@@ -146,6 +164,11 @@ class FootballAPI:
                 os.path.join(os.path.dirname(__file__), "..", "data", "api_budget.json"),
             )
         )
+        self.cache_database_url = os.getenv(
+            "CACHE_DATABASE_URL",
+            os.getenv("DATABASE_URL", ""),
+        ).strip()
+        self.store = PersistentStore(self.cache_database_url)
 
         self.base_url = "https://v3.football.api-sports.io"
         self.session = requests.Session()
@@ -191,6 +214,9 @@ class FootballAPI:
         self._load_logo_cache()
         self._load_api_budget()
         self.needs_daily_standings_warm = not self._has_full_target_standings_for_today()
+
+        if self.store.use_postgres:
+            logger.info("Using Postgres shared cache backend.")
 
     def _throttle(self) -> None:
         if self.min_request_interval_seconds <= 0:
@@ -256,127 +282,131 @@ class FootballAPI:
             response.raise_for_status()
             payload = response.json()
         except (requests.exceptions.RequestException, ValueError) as exc:
-            return None, str(exc)
+            error_text = str(exc)
+            if _is_daily_limit_error_text(error_text):
+                self._lock_api_budget_for_today()
+            return None, error_text
 
         upstream_errors = payload.get("errors")
         if self._has_upstream_errors(upstream_errors):
-            return None, self._format_upstream_errors(upstream_errors)
+            formatted_error = self._format_upstream_errors(upstream_errors)
+            if _is_daily_limit_error_text(formatted_error):
+                self._lock_api_budget_for_today()
+            return None, formatted_error
 
         return payload, None
 
-    def _load_fixtures_cache(self) -> None:
+    def _load_fixtures_cache(self, silent: bool = False) -> None:
+        try:
+            data = self.store.load_map(
+                "fixtures_cache",
+                file_paths=[self.fixtures_seed_path, self.fixtures_cache_path],
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to load fixtures cache from persistent store: {exc}")
+            return
+
         loaded_dates = 0
-        for path in [self.fixtures_seed_path, self.fixtures_cache_path]:
-            if not os.path.exists(path):
-                continue
-
-            try:
-                with open(path, "r", encoding="utf-8") as handle:
-                    data = json.load(handle)
-            except (OSError, json.JSONDecodeError) as exc:
-                logger.warning(f"Failed to load fixtures cache from {path}: {exc}")
-                continue
-
-            if not isinstance(data, dict):
-                continue
-
+        cache: dict[str, list[dict[str, Any]]] = {}
+        if isinstance(data, dict):
             for key, value in data.items():
                 if isinstance(value, list):
-                    self.fixtures_cache[key] = value
+                    cache[str(key)] = value
                     loaded_dates += 1
 
-        if loaded_dates > 0:
+        self.fixtures_cache = cache
+        if loaded_dates > 0 and not silent:
             logger.info(f"Loaded fixture cache entries for {loaded_dates} date keys.")
 
     def _save_fixtures_cache(self) -> None:
-        cache_dir = os.path.dirname(self.fixtures_cache_path)
-        if cache_dir:
-            os.makedirs(cache_dir, exist_ok=True)
-
         try:
-            with open(self.fixtures_cache_path, "w", encoding="utf-8") as handle:
-                json.dump(self.fixtures_cache, handle, ensure_ascii=False, indent=2)
-        except OSError as exc:
-            logger.warning(f"Failed to persist fixtures cache to {self.fixtures_cache_path}: {exc}")
+            self.store.save_map(
+                "fixtures_cache",
+                self.fixtures_cache,
+                file_path=self.fixtures_cache_path,
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to persist fixtures cache: {exc}")
 
-    def _load_fixtures_meta(self) -> None:
-        if not os.path.exists(self.fixtures_meta_path):
-            return
-
+    def _load_fixtures_meta(self, silent: bool = False) -> None:
         try:
-            with open(self.fixtures_meta_path, "r", encoding="utf-8") as handle:
-                data = json.load(handle)
-        except (OSError, json.JSONDecodeError) as exc:
-            logger.warning(f"Failed to load fixtures meta from {self.fixtures_meta_path}: {exc}")
+            data = self.store.load_map(
+                "fixtures_meta",
+                file_paths=[self.fixtures_meta_path],
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to load fixtures meta from persistent store: {exc}")
             return
 
-        if not isinstance(data, dict):
-            return
+        meta_map: dict[str, dict[str, Any]] = {}
+        if isinstance(data, dict):
+            for date_key, meta in data.items():
+                if isinstance(meta, dict):
+                    meta_map[str(date_key)] = meta
+        self.fixtures_meta = meta_map
 
-        for date_key, meta in data.items():
-            if isinstance(meta, dict):
-                self.fixtures_meta[str(date_key)] = meta
+        if self.fixtures_meta and not silent:
+            logger.info(f"Loaded fixtures meta entries for {len(self.fixtures_meta)} date keys.")
 
     def _save_fixtures_meta(self) -> None:
-        meta_dir = os.path.dirname(self.fixtures_meta_path)
-        if meta_dir:
-            os.makedirs(meta_dir, exist_ok=True)
-
         try:
-            with open(self.fixtures_meta_path, "w", encoding="utf-8") as handle:
-                json.dump(self.fixtures_meta, handle, ensure_ascii=False, indent=2)
-        except OSError as exc:
-            logger.warning(f"Failed to persist fixtures meta to {self.fixtures_meta_path}: {exc}")
+            self.store.save_map(
+                "fixtures_meta",
+                self.fixtures_meta,
+                file_path=self.fixtures_meta_path,
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to persist fixtures meta: {exc}")
 
-    def _load_logo_cache(self) -> None:
-        if not os.path.exists(self.logo_cache_path):
-            return
-
+    def _load_logo_cache(self, silent: bool = False) -> None:
         try:
-            with open(self.logo_cache_path, "r", encoding="utf-8") as handle:
-                data = json.load(handle)
-        except (OSError, json.JSONDecodeError) as exc:
-            logger.warning(f"Failed to load logo cache from {self.logo_cache_path}: {exc}")
+            data = self.store.load_map(
+                "logo_cache",
+                file_paths=[self.logo_cache_path],
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to load logo cache from persistent store: {exc}")
             return
 
         if not isinstance(data, dict):
             return
 
+        loaded_logo_cache: dict[str, dict[str, str]] = {
+            "leagues_by_id": {},
+            "leagues_by_name": {},
+            "teams_by_id": {},
+            "teams_by_name": {},
+        }
         for key in ["leagues_by_id", "leagues_by_name", "teams_by_id", "teams_by_name"]:
             bucket = data.get(key)
             if isinstance(bucket, dict):
-                self.logo_cache[key] = {
+                loaded_logo_cache[key] = {
                     str(k): str(v)
                     for k, v in bucket.items()
                     if str(k).strip() and _clean_logo(v)
                 }
 
-    def _save_logo_cache(self) -> None:
-        cache_dir = os.path.dirname(self.logo_cache_path)
-        if cache_dir:
-            os.makedirs(cache_dir, exist_ok=True)
+        self.logo_cache = loaded_logo_cache
+        total_logo_keys = sum(len(bucket) for bucket in self.logo_cache.values())
+        if total_logo_keys > 0 and not silent:
+            logger.info(f"Loaded logo cache entries: {total_logo_keys}.")
 
+    def _save_logo_cache(self) -> None:
         try:
-            with open(self.logo_cache_path, "w", encoding="utf-8") as handle:
-                json.dump(self.logo_cache, handle, ensure_ascii=False, indent=2)
-        except OSError as exc:
-            logger.warning(f"Failed to persist logo cache to {self.logo_cache_path}: {exc}")
+            self.store.save_map(
+                "logo_cache",
+                self.logo_cache,
+                file_path=self.logo_cache_path,
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to persist logo cache: {exc}")
 
     def _load_api_budget(self) -> None:
-        if not os.path.exists(self.api_budget_path):
-            self._mark_rollover_refresh_targets()
-            self._save_api_budget()
-            return
-
-        try:
-            with open(self.api_budget_path, "r", encoding="utf-8") as handle:
-                payload = json.load(handle)
-        except (OSError, json.JSONDecodeError) as exc:
-            logger.warning(f"Failed to load API budget from {self.api_budget_path}: {exc}")
-            self._save_api_budget()
-            return
-
+        payload = self.store.load_budget_payload(self.api_budget_path)
         if not isinstance(payload, dict):
+            self._mark_rollover_refresh_targets()
+            self.api_budget_date = _local_today_iso()
+            self.api_call_count = 0
             self._save_api_budget()
             return
 
@@ -413,14 +443,17 @@ class FootballAPI:
         self.needs_daily_standings_warm = True
 
     def _sync_api_budget_from_disk(self) -> None:
-        if not os.path.exists(self.api_budget_path):
-            return
-        try:
-            with open(self.api_budget_path, "r", encoding="utf-8") as handle:
-                payload = json.load(handle)
-        except (OSError, json.JSONDecodeError):
+        if self.store.use_postgres:
+            count = self.store.get_budget_count_for_date(
+                self.api_budget_date,
+                self.api_budget_path,
+            )
+            safe_shared_count = self._sanitize_budget_count(count)
+            safe_local_count = self._sanitize_budget_count(self.api_call_count)
+            self.api_call_count = max(safe_local_count, safe_shared_count)
             return
 
+        payload = self.store.load_budget_payload(self.api_budget_path)
         if not isinstance(payload, dict):
             return
 
@@ -432,55 +465,56 @@ class FootballAPI:
             return
 
         if date_text == self.api_budget_date:
-            # Prefer the higher value to stay safe across concurrent processes.
             safe_disk_count = self._sanitize_budget_count(count)
             safe_local_count = self._sanitize_budget_count(self.api_call_count)
-            merged = max(safe_local_count, safe_disk_count)
-            if merged != self.api_call_count:
-                self.api_call_count = merged
-                self._save_api_budget()
+            self.api_call_count = max(safe_local_count, safe_disk_count)
 
     def _save_api_budget(self) -> None:
-        budget_dir = os.path.dirname(self.api_budget_path)
-        if budget_dir:
-            os.makedirs(budget_dir, exist_ok=True)
-
         self.api_call_count = self._sanitize_budget_count(self.api_call_count)
         payload = {
             "date": self.api_budget_date,
             "count": self.api_call_count,
             "max_daily_api_calls": self.max_daily_api_calls,
         }
-        try:
-            with open(self.api_budget_path, "w", encoding="utf-8") as handle:
-                json.dump(payload, handle, ensure_ascii=False, indent=2)
-        except OSError as exc:
-            logger.warning(f"Failed to persist API budget to {self.api_budget_path}: {exc}")
+        self.store.save_budget_payload(payload, self.api_budget_path)
+
+    def _lock_api_budget_for_today(self) -> None:
+        self._refresh_api_budget_if_needed()
+        locked_count = self.store.lock_budget(
+            self.api_budget_date,
+            self.max_daily_api_calls,
+            self.api_budget_path,
+        )
+        self.api_call_count = self._sanitize_budget_count(locked_count)
 
     def _refresh_api_budget_if_needed(self) -> None:
         today = _local_today_iso()
         if self.api_budget_date == today:
             return
         self.api_budget_date = today
-        self.api_call_count = 0
+        self.api_call_count = self._sanitize_budget_count(
+            self.store.get_budget_count_for_date(today, self.api_budget_path)
+        )
         self.standings_cache.clear()
         self.standings_cache_date = ""
         self._mark_rollover_refresh_targets()
-        self._save_api_budget()
+        if not self.store.use_postgres:
+            self._save_api_budget()
 
     def _consume_api_budget(self) -> bool:
-        self._sync_api_budget_from_disk()
         self._refresh_api_budget_if_needed()
-        self.api_call_count = self._sanitize_budget_count(self.api_call_count)
-        if self.api_call_count >= self.max_daily_api_calls:
-            return False
-        self.api_call_count += 1
-        self._save_api_budget()
-        return True
+        self._sync_api_budget_from_disk()
+        allowed, count = self.store.consume_budget(
+            self.api_budget_date,
+            self.max_daily_api_calls,
+            self.api_budget_path,
+        )
+        self.api_call_count = self._sanitize_budget_count(count)
+        return bool(allowed)
 
     def budget_status(self) -> dict[str, Any]:
-        self._sync_api_budget_from_disk()
         self._refresh_api_budget_if_needed()
+        self._sync_api_budget_from_disk()
         self.api_call_count = self._sanitize_budget_count(self.api_call_count)
         remaining = max(0, self.max_daily_api_calls - self.api_call_count)
         return {
@@ -521,7 +555,7 @@ class FootballAPI:
             cache_key = f"{league_id}_{season}"
             if self.standings_cache_date == _local_today_iso() and cache_key in self.standings_cache:
                 continue
-            self.get_standings(league_id, season)
+            self.get_standings(league_id, season, allow_live_refresh=True)
 
         self.needs_daily_standings_warm = not self._has_full_target_standings_for_today()
 
@@ -537,15 +571,28 @@ class FootballAPI:
         if changed:
             self._save_fixtures_cache()
 
-    def _load_standings_cache(self) -> None:
-        if not os.path.exists(self.standings_cache_path):
+    def _refresh_shared_cache_state(self) -> None:
+        if not self.store.use_postgres:
             return
 
+        self._load_fixtures_cache(silent=True)
+        self._load_fixtures_meta(silent=True)
+        self._load_standings_cache(silent=True)
+        self._load_logo_cache(silent=True)
+        today = _local_today_iso()
+        self.api_budget_date = today
+        self.api_call_count = self._sanitize_budget_count(
+            self.store.get_budget_count_for_date(today, self.api_budget_path)
+        )
+
+    def _load_standings_cache(self, silent: bool = False) -> None:
         try:
-            with open(self.standings_cache_path, "r", encoding="utf-8") as handle:
-                data = json.load(handle)
-        except (OSError, json.JSONDecodeError) as exc:
-            logger.warning(f"Failed to load standings cache from {self.standings_cache_path}: {exc}")
+            data = self.store.load_map(
+                "standings_cache",
+                file_paths=[self.standings_cache_path],
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to load standings cache from persistent store: {exc}")
             return
 
         if not isinstance(data, dict):
@@ -554,33 +601,36 @@ class FootballAPI:
         cache_date = str(data.get("_cache_date", "")).strip()
         leagues = data.get("leagues", {})
         if cache_date != _local_today_iso() or not isinstance(leagues, dict):
+            self.standings_cache.clear()
+            self.standings_cache_date = ""
             return
 
         loaded = 0
+        cache: dict[str, dict[str, Any]] = {}
         for cache_key, team_rows in leagues.items():
             if isinstance(team_rows, dict):
-                self.standings_cache[str(cache_key)] = team_rows
+                cache[str(cache_key)] = team_rows
                 loaded += 1
 
+        self.standings_cache = cache
         if loaded > 0:
             self.standings_cache_date = cache_date
-            logger.info(f"Loaded standings cache entries for {loaded} league keys.")
+            if not silent:
+                logger.info(f"Loaded standings cache entries for {loaded} league keys.")
 
     def _save_standings_cache(self) -> None:
-        cache_dir = os.path.dirname(self.standings_cache_path)
-        if cache_dir:
-            os.makedirs(cache_dir, exist_ok=True)
-
         payload = {
             "_cache_date": self.standings_cache_date,
             "leagues": self.standings_cache,
         }
-
         try:
-            with open(self.standings_cache_path, "w", encoding="utf-8") as handle:
-                json.dump(payload, handle, ensure_ascii=False, indent=2)
-        except OSError as exc:
-            logger.warning(f"Failed to persist standings cache to {self.standings_cache_path}: {exc}")
+            self.store.save_map(
+                "standings_cache",
+                payload,
+                file_path=self.standings_cache_path,
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to persist standings cache: {exc}")
 
     def _index_logo(
         self,
@@ -716,6 +766,21 @@ class FootballAPI:
                 filtered.append(match)
         return filtered
 
+    def _collect_cached_matches_between(
+        self,
+        start_utc: dt.datetime,
+        end_utc: dt.datetime,
+    ) -> list[dict[str, Any]]:
+        merged_rows: list[dict[str, Any]] = []
+        for rows in self.fixtures_cache.values():
+            if isinstance(rows, list):
+                merged_rows.extend(rows)
+
+        self._enrich_fixture_rows_with_logo_cache(merged_rows)
+        filtered = self._filter_response_rows(merged_rows)
+        deduped = self._dedupe_fixtures(filtered)
+        return self._filter_matches_in_window(deduped, start_utc, end_utc)
+
     def _cache_source_for_date(self, date: str) -> str:
         return "cache_today" if date == _local_today_iso() else "cache"
 
@@ -730,6 +795,19 @@ class FootballAPI:
 
         age = dt.datetime.now(dt.UTC) - last_attempt
         return max(0.0, age.total_seconds() / 60.0)
+
+    def _date_attempted_today(self, date: str) -> bool:
+        meta = self.fixtures_meta.get(date)
+        if not isinstance(meta, dict):
+            return False
+
+        last_attempt = self._parse_iso_datetime(
+            meta.get("last_attempt_at") or meta.get("updated_at")
+        )
+        if last_attempt is None:
+            return False
+
+        return last_attempt.date() == dt.datetime.now(dt.UTC).date()
 
     def _update_fixtures_meta(
         self,
@@ -779,6 +857,10 @@ class FootballAPI:
         if date in self.force_refresh_dates:
             self.force_refresh_dates.discard(date)
             return True
+
+        # Strict cache mode: only one live fetch attempt per date per day.
+        if self.single_fetch_per_date_per_day and self._date_attempted_today(date):
+            return False
 
         if has_cache and self._remaining_api_budget() < len(self.target_leagues):
             return False
@@ -869,6 +951,10 @@ class FootballAPI:
                 "fixtures", {"date": date, "league": league_id}
             )
             if payload is None:
+                if error_message and _is_daily_limit_error_text(error_message):
+                    budget_error = error_message
+                    upstream_issues.append(f"{league_label}: {error_message}")
+                    break
                 if error_message and "Daily API call budget reached" in error_message:
                     budget_error = error_message
                     break
@@ -896,7 +982,12 @@ class FootballAPI:
     def _season_for_date(date_value: dt.date) -> int:
         return date_value.year if date_value.month >= 7 else date_value.year - 1
 
-    def get_standings(self, league_id: int, season: int) -> dict[str, dict[str, Any]]:
+    def get_standings(
+        self,
+        league_id: int,
+        season: int,
+        allow_live_refresh: bool = True,
+    ) -> dict[str, dict[str, Any]]:
         cache_key = f"{league_id}_{season}"
         today_iso = _local_today_iso()
 
@@ -911,6 +1002,13 @@ class FootballAPI:
         if league_id not in self.target_leagues:
             fallback = self._generate_fallback_standings()
             self.standings_cache[cache_key] = fallback
+            return fallback
+
+        if not allow_live_refresh:
+            fallback = self._generate_fallback_standings()
+            self.standings_cache[cache_key] = fallback
+            self.standings_cache_date = today_iso
+            self._save_standings_cache()
             return fallback
 
         if not self.api_key:
@@ -992,7 +1090,11 @@ class FootballAPI:
             "bayer leverkusen": {"rank": 1, "points": 81, "form": "WWDWW"},
         }
 
-    def get_fixtures_by_date(self, date: str | None = None) -> dict[str, Any]:
+    def get_fixtures_by_date(
+        self, date: str | None = None, allow_live_refresh: bool = True
+    ) -> dict[str, Any]:
+        self._refresh_shared_cache_state()
+
         if not date:
             date_value = _local_now().date()
             date = date_value.isoformat()
@@ -1014,6 +1116,12 @@ class FootballAPI:
             return self._build_cached_payload(
                 date,
                 cache_reason="Using cached result within refresh interval",
+            )
+
+        if not allow_live_refresh:
+            return self._build_cached_payload(
+                date,
+                cache_reason="Live refresh disabled for request path",
             )
 
         allowed, reason = self._is_allowed_fixture_date(date_value)
@@ -1096,7 +1204,11 @@ class FootballAPI:
             "upstream_issues": upstream_issues,
         }
 
-    def get_fixtures_in_window(self, window_hours: int | None = None) -> dict[str, Any]:
+    def get_fixtures_in_window(
+        self, window_hours: int | None = None, allow_live_refresh: bool = True
+    ) -> dict[str, Any]:
+        self._refresh_shared_cache_state()
+
         hours = self.default_window_hours if window_hours is None else int(window_hours)
         hours = max(1, min(48, hours))
 
@@ -1109,14 +1221,17 @@ class FootballAPI:
         today = now_local.date()
         tomorrow = today + dt.timedelta(days=1)
 
+        # Safe-mode quota policy: only today's fixtures are fetched live.
+        # Tomorrow is cache-only, avoiding free-plan future-date request burn.
         payloads = [
-            self.get_fixtures_by_date(today.isoformat()),
-            self.get_fixtures_by_date(tomorrow.isoformat()),
+            self.get_fixtures_by_date(today.isoformat(), allow_live_refresh=allow_live_refresh),
+            self.get_fixtures_by_date(tomorrow.isoformat(), allow_live_refresh=False),
         ]
         date_keys = [today.isoformat(), tomorrow.isoformat()]
 
         # One daily pass to warm standings/logo knowledge for target leagues.
-        self._warm_target_standings_once()
+        if allow_live_refresh:
+            self._warm_target_standings_once()
         self._enrich_cached_dates_with_logo_cache(date_keys)
 
         merged_rows: list[dict[str, Any]] = []
@@ -1149,6 +1264,10 @@ class FootballAPI:
         filtered = self._filter_response_rows(merged_rows)
         deduped = self._dedupe_fixtures(filtered)
         window_matches = self._filter_matches_in_window(deduped, now_utc, end_utc)
+        cached_window_matches = self._collect_cached_matches_between(now_utc, end_utc)
+        if cached_window_matches:
+            window_matches = self._dedupe_fixtures(window_matches + cached_window_matches)
+            window_matches = self._filter_matches_in_window(window_matches, now_utc, end_utc)
 
         if (
             len(window_matches) < self.min_window_matches
@@ -1159,6 +1278,16 @@ class FootballAPI:
                 extended_end_local = now_local + dt.timedelta(hours=extended_total_hours)
                 extended_end_utc = extended_end_local.astimezone(dt.UTC)
                 extended_matches = self._filter_matches_in_window(deduped, now_utc, extended_end_utc)
+                cached_extended_matches = self._collect_cached_matches_between(
+                    now_utc, extended_end_utc
+                )
+                if cached_extended_matches:
+                    extended_matches = self._dedupe_fixtures(
+                        extended_matches + cached_extended_matches
+                    )
+                    extended_matches = self._filter_matches_in_window(
+                        extended_matches, now_utc, extended_end_utc
+                    )
                 if len(extended_matches) > len(window_matches):
                     window_matches = extended_matches
                     end_local = extended_end_local
@@ -1168,7 +1297,20 @@ class FootballAPI:
                     )
 
         if not window_matches:
-            warnings.append(f"No fixtures found in the next {hours} hours.")
+            tomorrow_end_local = dt.datetime.combine(
+                tomorrow,
+                dt.time(hour=23, minute=59, second=59),
+                tzinfo=now_local.tzinfo,
+            )
+            tomorrow_end_utc = tomorrow_end_local.astimezone(dt.UTC)
+            fallback_matches = self._collect_cached_matches_between(now_utc, tomorrow_end_utc)
+            if fallback_matches:
+                window_matches = fallback_matches
+                end_local = tomorrow_end_local
+                end_utc = tomorrow_end_utc
+                warnings.append("Using cached upcoming matches through end of tomorrow.")
+            else:
+                warnings.append(f"No fixtures found in the next {hours} hours.")
 
         has_live = any(source.startswith("live") for source in sources)
         has_cache = any(source.startswith("cache") for source in sources)

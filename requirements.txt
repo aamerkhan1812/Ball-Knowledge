@@ -9,5 +9,6 @@ scipy>=1.15,<2
 scikit-learn>=1.6,<2
 shap>=0.48,<1
 loguru>=0.7,<1
+psycopg[binary]>=3.2,<4
 pytrends>=4.9,<5
 pytest>=8.3,<9

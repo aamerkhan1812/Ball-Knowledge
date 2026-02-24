@@ -100,6 +100,7 @@ class MatchScorer:
         match: dict[str, Any],
         api: Any = None,
         standings: dict[str, dict[str, Any]] | None = None,
+        allow_live_refresh: bool = True,
     ) -> dict[str, int | float]:
         league = match.get("league", {})
         teams = match.get("teams", {})
@@ -133,7 +134,11 @@ class MatchScorer:
         team_standings = standings or {}
         if not team_standings and api:
             season = int(league.get("season", 2023))
-            team_standings = api.get_standings(league_id, season)
+            team_standings = api.get_standings(
+                league_id,
+                season,
+                allow_live_refresh=allow_live_refresh,
+            )
 
         def get_team_stats(team_name: str) -> tuple[int, int, int]:
             key = team_name.strip().lower()
@@ -229,6 +234,7 @@ class MatchScorer:
         matches: list[dict[str, Any]],
         api: Any = None,
         prefs: dict[str, Any] | None = None,
+        allow_live_refresh: bool = True,
     ) -> list[dict[str, Any]]:
         prefs = prefs or {}
         fav_team = str(prefs.get("favorite_team", "")).strip().lower()
@@ -246,7 +252,11 @@ class MatchScorer:
                 key = (league_id, season)
                 if key in standings_by_competition:
                     continue
-                standings_by_competition[key] = api.get_standings(league_id, season)
+                standings_by_competition[key] = api.get_standings(
+                    league_id,
+                    season,
+                    allow_live_refresh=allow_live_refresh,
+                )
 
         scored_matches: list[dict[str, Any]] = []
         for match in matches:
@@ -265,7 +275,12 @@ class MatchScorer:
             league_id = int(league.get("id", 0) or 0)
             season = int(league.get("season", 2023) or 2023)
             standings = standings_by_competition.get((league_id, season), {})
-            features = self.extract_features(match, api=api, standings=standings)
+            features = self.extract_features(
+                match,
+                api=api,
+                standings=standings,
+                allow_live_refresh=allow_live_refresh,
+            )
             df_features = pd.DataFrame([features])
 
             rule_score = (
