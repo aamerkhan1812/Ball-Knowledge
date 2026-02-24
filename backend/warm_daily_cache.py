@@ -24,8 +24,7 @@ def _dedupe_text(values: list[str]) -> list[str]:
 def main() -> None:
     api = FootballAPI()
     today = dt.date.today()
-    tomorrow = today + dt.timedelta(days=1)
-    requested_dates = [today.isoformat(), tomorrow.isoformat()]
+    requested_dates = [today.isoformat()]
 
     fixtures_loaded = 0
     warnings: list[str] = []
@@ -33,7 +32,7 @@ def main() -> None:
     leagues: set[tuple[int, int]] = set()
 
     for date_text in requested_dates:
-        payload = api.get_fixtures_by_date(date_text)
+        payload = api.get_fixtures_by_date(date_text, allow_live_refresh=True)
         source_by_date[date_text] = str(payload.get("source", "unknown"))
 
         payload_warnings = payload.get("warnings")
@@ -56,7 +55,7 @@ def main() -> None:
 
     warmed = 0
     for league_id, season in sorted(leagues):
-        api.get_standings(league_id, season)
+        api.get_standings(league_id, season, allow_live_refresh=True)
         warmed += 1
 
     print(
