@@ -138,12 +138,14 @@ export default function Home() {
             Enter the tunnel. Floodlights are live. The AI engine is mapping pressure swings, knockout stakes and momentum fractures across the next battles.
           </p>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-[minmax(220px,auto)_1fr]">
-            <NextKickoffClock matches={matches} />
-            <ModeToggles mode={mode} setMode={setMode} />
-          </div>
+          <div className="mt-5 flex flex-col gap-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <NextKickoffClock matches={matches} />
+              <div className="w-full lg:max-w-[820px]">
+                <ModeToggles mode={mode} setMode={setMode} />
+              </div>
+            </div>
 
-          <div className="mt-5">
             <SearchPanel
               searchInput={searchInput}
               setSearchInput={setSearchInput}
