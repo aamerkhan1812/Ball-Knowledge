@@ -39,12 +39,18 @@ export function SearchPanel({
   const [focused, setFocused] = useState(false);
 
   return (
-    <section id="search-zone" className="rounded-2xl border border-white/12 bg-black/30 p-3 backdrop-blur-md md:p-4">
-      <label htmlFor="team-search" className="text-xs font-semibold uppercase tracking-[0.22em] text-white/65">
-        Favorite Team
+    <section
+      id="search-zone"
+      className="mx-auto w-full max-w-[980px] rounded-2xl border border-white/18 bg-black/35 p-4 backdrop-blur-md md:p-5"
+    >
+      <label
+        htmlFor="team-search"
+        className="block text-center text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-white/72 md:text-xs"
+      >
+        Team Selection
       </label>
 
-      <div className="mt-2 flex flex-col gap-2 md:flex-row">
+      <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
         <div className={`spark-frame ${focused ? "spark-frame-active" : ""}`}>
           <input
             id="team-search"
@@ -59,7 +65,7 @@ export function SearchPanel({
               }
             }}
             placeholder="Search your team (e.g. Alaves, Chelsea)"
-            className="w-full rounded-xl border border-white/15 bg-black/45 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-white/45 focus:outline-none md:text-base"
+            className="w-full rounded-xl border border-white/20 bg-black/45 px-4 py-3.5 text-base text-white placeholder:text-white/42 focus:border-white/50 focus:outline-none"
           />
           <span className="spark-trail" />
         </div>
@@ -67,7 +73,7 @@ export function SearchPanel({
         <button
           type="button"
           onClick={onApply}
-          className="rounded-xl border border-cyan-300/40 bg-gradient-to-r from-cyan-400/40 via-blue-400/30 to-emerald-300/40 px-5 py-3 text-sm font-semibold text-white transition hover:border-cyan-200/70 hover:shadow-[0_0_28px_rgba(66,213,255,0.35)] md:min-w-36 md:text-base"
+          className="rounded-xl border border-cyan-300/45 bg-gradient-to-r from-cyan-400/45 via-blue-400/35 to-emerald-300/45 px-5 py-3.5 text-base font-semibold text-white transition hover:border-cyan-200/75 hover:shadow-[0_0_28px_rgba(66,213,255,0.35)] md:min-w-44"
         >
           Engage Search
         </button>
