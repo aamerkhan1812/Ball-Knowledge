@@ -117,6 +117,27 @@ function GoalLoader() {
   );
 }
 
+function ActiveBackground() {
+  return (
+    <div className="stadium-background" aria-hidden="true">
+      <span className="bg-orb orb-a" />
+      <span className="bg-orb orb-b" />
+      <span className="bg-orb orb-c" />
+      <span className="pitch-lines" />
+      <span className="stadium-beam beam-a" />
+      <span className="stadium-beam beam-b" />
+      <span className="crowd-glow" />
+      <div className="ball-stream">
+        <span className="ball-tracer tracer-1" />
+        <span className="ball-tracer tracer-2" />
+        <span className="ball-tracer tracer-3" />
+        <span className="ball-tracer tracer-4" />
+        <span className="ball-tracer tracer-5" />
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,13 +219,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="stadium-page">
-        <div className="stadium-background" aria-hidden="true">
-          <span className="bg-orb orb-a" />
-          <span className="bg-orb orb-b" />
-          <span className="bg-orb orb-c" />
-          <span className="pitch-lines" />
-          <span className="moving-ball" />
-        </div>
+        <ActiveBackground />
         <div className="loading-center">
           <GoalLoader />
         </div>
@@ -214,13 +229,7 @@ export default function Home() {
 
   return (
     <div className="stadium-page">
-      <div className="stadium-background" aria-hidden="true">
-        <span className="bg-orb orb-a" />
-        <span className="bg-orb orb-b" />
-        <span className="bg-orb orb-c" />
-        <span className="pitch-lines" />
-        <span className="moving-ball" />
-      </div>
+      <ActiveBackground />
 
       <main className="stadium-content">
         <header className="hero-panel">
