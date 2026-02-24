@@ -125,6 +125,8 @@ async def readyz() -> dict[str, Any]:
         "api_daily_remaining": budget["remaining"],
         "api_budget_date": budget["date"],
         "live_fetch_on_request": LIVE_FETCH_ON_REQUEST,
+        "auto_snapshot_refresh": api.auto_snapshot_refresh,
+        "snapshot_ttl_minutes": api.snapshot_ttl_minutes,
         "cache_backend": "postgres" if api.store.use_postgres else "file",
         "cache_database_configured": bool(api.cache_database_url),
     }
