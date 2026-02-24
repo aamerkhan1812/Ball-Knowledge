@@ -121,6 +121,9 @@ class FootballAPI:
         self.snapshot_error_retry_minutes = _env_int(
             "SNAPSHOT_ERROR_RETRY_MINUTES", default=60, minimum=1, maximum=240
         )
+        self.snapshot_align_to_utc_day = _env_flag(
+            "SNAPSHOT_ALIGN_TO_UTC_DAY", default=True
+        )
         self.snapshot_include_tomorrow_live = _env_flag(
             "SNAPSHOT_INCLUDE_TOMORROW_LIVE", default=True
         )
@@ -878,12 +881,19 @@ class FootballAPI:
 
     def _set_window_snapshot_meta(self, status: str, last_error: str | None = None) -> None:
         now_utc = dt.datetime.now(dt.UTC)
-        ttl_minutes = (
-            self.snapshot_ttl_minutes
-            if status == "success"
-            else self.snapshot_error_retry_minutes
-        )
-        expires_at = now_utc + dt.timedelta(minutes=ttl_minutes)
+        if status == "success" and self.snapshot_align_to_utc_day:
+            expires_at = dt.datetime.combine(
+                now_utc.date() + dt.timedelta(days=1),
+                dt.time(hour=0, minute=0, second=0),
+                tzinfo=dt.UTC,
+            )
+        else:
+            ttl_minutes = (
+                self.snapshot_ttl_minutes
+                if status == "success"
+                else self.snapshot_error_retry_minutes
+            )
+            expires_at = now_utc + dt.timedelta(minutes=ttl_minutes)
 
         meta: dict[str, Any] = {
             "status": status,

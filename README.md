@@ -75,7 +75,7 @@ python ml_pipeline/evaluate_model.py
 - Snapshot flow is request-driven: if snapshot is missing or expired, backend refreshes once; otherwise it serves cached snapshot.
 - Request throttling is enabled via `MIN_REQUEST_INTERVAL_SECONDS` (default `1`).
 - On upstream daily-limit detection, the local budget is locked for the rest of the day to prevent repeated retry bursts.
-- Configure snapshot freshness via `AUTO_SNAPSHOT_REFRESH=true`, `SNAPSHOT_TTL_MINUTES`, `SNAPSHOT_ERROR_RETRY_MINUTES`, and `SNAPSHOT_INCLUDE_TOMORROW_LIVE=true`.
+- Configure snapshot freshness via `AUTO_SNAPSHOT_REFRESH=true`, `SNAPSHOT_TTL_MINUTES`, `SNAPSHOT_ERROR_RETRY_MINUTES`, `SNAPSHOT_ALIGN_TO_UTC_DAY=true`, and `SNAPSHOT_INCLUDE_TOMORROW_LIVE=true`.
 
 Manual warm (optional):
 

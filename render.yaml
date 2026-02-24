@@ -28,6 +28,8 @@ services:
         value: "1440"
       - key: SNAPSHOT_ERROR_RETRY_MINUTES
         value: "60"
+      - key: SNAPSHOT_ALIGN_TO_UTC_DAY
+        value: "true"
       - key: SNAPSHOT_INCLUDE_TOMORROW_LIVE
         value: "true"
       - key: MIN_WINDOW_MATCHES
