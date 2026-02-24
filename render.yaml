@@ -25,11 +25,11 @@ services:
       - key: AUTO_SNAPSHOT_REFRESH
         value: "true"
       - key: SNAPSHOT_TTL_MINUTES
-        value: "360"
+        value: "1440"
       - key: SNAPSHOT_ERROR_RETRY_MINUTES
-        value: "30"
+        value: "60"
       - key: SNAPSHOT_INCLUDE_TOMORROW_LIVE
-        value: "false"
+        value: "true"
       - key: MIN_WINDOW_MATCHES
         value: "4"
       - key: WINDOW_EXTENSION_HOURS
@@ -39,7 +39,7 @@ services:
       - key: LIVE_FETCH_ON_REQUEST
         value: "false"
       - key: MAX_DAILY_API_CALLS
-        value: "25"
+        value: "40"
       - key: FILTER_TARGET_LEAGUES
         value: "true"
       - key: PREFERENCES_DB_PATH

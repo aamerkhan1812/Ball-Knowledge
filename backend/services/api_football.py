@@ -116,20 +116,20 @@ class FootballAPI:
         self.default_window_hours = _env_int("UPCOMING_WINDOW_HOURS", default=20, minimum=1, maximum=48)
         self.auto_snapshot_refresh = _env_flag("AUTO_SNAPSHOT_REFRESH", default=True)
         self.snapshot_ttl_minutes = _env_int(
-            "SNAPSHOT_TTL_MINUTES", default=360, minimum=5, maximum=1440
+            "SNAPSHOT_TTL_MINUTES", default=1440, minimum=5, maximum=1440
         )
         self.snapshot_error_retry_minutes = _env_int(
-            "SNAPSHOT_ERROR_RETRY_MINUTES", default=30, minimum=1, maximum=240
+            "SNAPSHOT_ERROR_RETRY_MINUTES", default=60, minimum=1, maximum=240
         )
         self.snapshot_include_tomorrow_live = _env_flag(
-            "SNAPSHOT_INCLUDE_TOMORROW_LIVE", default=False
+            "SNAPSHOT_INCLUDE_TOMORROW_LIVE", default=True
         )
         self.min_window_matches = _env_int("MIN_WINDOW_MATCHES", default=4, minimum=1, maximum=20)
         self.window_extension_hours = _env_int("WINDOW_EXTENSION_HOURS", default=4, minimum=0, maximum=24)
         self.single_fetch_per_date_per_day = _env_flag(
             "SINGLE_FETCH_PER_DATE_PER_DAY", default=True
         )
-        self.max_daily_api_calls = _env_int("MAX_DAILY_API_CALLS", default=25, minimum=1, maximum=500)
+        self.max_daily_api_calls = _env_int("MAX_DAILY_API_CALLS", default=40, minimum=1, maximum=500)
         self.fixture_cache_refresh_minutes = _env_int(
             "FIXTURE_CACHE_REFRESH_MINUTES", default=90, minimum=5, maximum=720
         )

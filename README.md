@@ -67,15 +67,15 @@ python ml_pipeline/evaluate_model.py
 ## 5) Safe Mode
 
 - Backend uses only `API_SPORTS_KEY` (single key).
-- Upstream fixture API calls are restricted to **today only** (tomorrow is cache-only) and filtered to a rolling upcoming window (default 20h); historical upstream fetches are blocked.
-- A hard local API budget (`MAX_DAILY_API_CALLS`, default `25`) is enforced and resets daily.
+- Upstream fixture API calls are restricted to **today + tomorrow** (configurable via `SNAPSHOT_INCLUDE_TOMORROW_LIVE`) and filtered to a rolling upcoming window (default 20h); historical upstream fetches are blocked.
+- A hard local API budget (`MAX_DAILY_API_CALLS`, default `40`) is enforced and resets daily.
 - Strict daily cache mode fetches each date at most once/day (`SINGLE_FETCH_PER_DATE_PER_DAY=true`).
 - Shared persistent cache uses Postgres when `CACHE_DATABASE_URL` is configured (recommended on Render); file JSON cache remains local fallback.
 - Fixtures, standings, known logos, cache metadata, and API budget counters are persisted in the shared store.
 - Snapshot flow is request-driven: if snapshot is missing or expired, backend refreshes once; otherwise it serves cached snapshot.
 - Request throttling is enabled via `MIN_REQUEST_INTERVAL_SECONDS` (default `1`).
 - On upstream daily-limit detection, the local budget is locked for the rest of the day to prevent repeated retry bursts.
-- Configure snapshot freshness via `AUTO_SNAPSHOT_REFRESH=true`, `SNAPSHOT_TTL_MINUTES`, and `SNAPSHOT_ERROR_RETRY_MINUTES`.
+- Configure snapshot freshness via `AUTO_SNAPSHOT_REFRESH=true`, `SNAPSHOT_TTL_MINUTES`, `SNAPSHOT_ERROR_RETRY_MINUTES`, and `SNAPSHOT_INCLUDE_TOMORROW_LIVE=true`.
 
 Manual warm (optional):
 
