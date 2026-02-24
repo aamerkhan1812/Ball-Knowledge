@@ -1,29 +1,17 @@
 "use client";
 
-import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
-
-type Match = {
-  id: number;
-  home_team: string;
-  home_logo?: string | null;
-  away_team: string;
-  away_logo?: string | null;
-  kickoff: string;
-  league: string;
-  league_logo?: string | null;
-  score: number;
-  probability: string;
-  reason: string;
-};
-
-type MatchesResponse = {
-  status: string;
-  total_matches_checked: number;
-  matches: Match[];
-  warnings?: string[];
-  source?: string;
-};
+import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActiveBackground } from "@/components/battlefield/ActiveBackground";
+import { CrowdNoiseToggle } from "@/components/battlefield/CrowdNoiseToggle";
+import { LoadingSequence } from "@/components/battlefield/LoadingSequence";
+import { MatchCard } from "@/components/battlefield/MatchCard";
+import { MatchModal } from "@/components/battlefield/MatchModal";
+import { MobileBottomNav } from "@/components/battlefield/MobileBottomNav";
+import { ModeToggles } from "@/components/battlefield/ModeToggles";
+import { NextKickoffClock } from "@/components/battlefield/NextKickoffClock";
+import { SearchPanel } from "@/components/battlefield/SearchPanel";
+import type { Match, MatchesResponse, UiMode } from "@/components/battlefield/types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -36,106 +24,8 @@ const UPCOMING_WINDOW_HOURS =
     ? Math.min(48, Math.max(1, Math.round(RAW_WINDOW_HOURS)))
     : 20;
 
-function toBadgeText(name: string, maxLength = 3): string {
-  const tokens = name.trim().match(/[A-Za-z0-9]+/g) ?? [];
-  if (tokens.length === 0) {
-    return "?";
-  }
-
-  if (tokens.length === 1) {
-    const single = tokens[0].slice(0, Math.max(2, Math.min(3, maxLength)));
-    return single.toUpperCase() || "?";
-  }
-
-  const initials = tokens
-    .slice(0, Math.max(2, maxLength))
-    .map((token) => token[0]?.toUpperCase() ?? "")
-    .join("");
-
-  if (initials.length > 0) {
-    return initials;
-  }
-
-  const firstToken = tokens[0] ?? "";
-  return firstToken.slice(0, 2).toUpperCase() || "?";
-}
-
-function formatKickoff(kickoff: string): { dateText: string; timeText: string } {
-  const kickoffDate = new Date(kickoff);
-  if (Number.isNaN(kickoffDate.getTime())) {
-    return { dateText: "Kickoff TBD", timeText: "" };
-  }
-
-  return {
-    dateText: kickoffDate.toLocaleDateString([], {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    }),
-    timeText: kickoffDate.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  };
-}
-
-function rankLabelForIndex(index: number): string {
-  if (index === 0) {
-    return "#1 Must-Watch";
-  }
-  if (index === 1) {
-    return "#2 Backup";
-  }
-  if (index === 2) {
-    return "#3 Solid Choice";
-  }
-  return "Watchlist";
-}
-
-function rankToneForIndex(index: number): string {
-  if (index === 0) {
-    return "rank-gold";
-  }
-  if (index === 1) {
-    return "rank-silver";
-  }
-  if (index === 2) {
-    return "rank-bronze";
-  }
-  return "rank-plain";
-}
-
-function GoalLoader() {
-  return (
-    <div className="goal-loader" role="status" aria-live="polite">
-      <div className="goal-frame">
-        <div className="goal-net" />
-        <div className="goal-ball" />
-      </div>
-      <p className="goal-loader-text">Whistling up your matchday feed...</p>
-    </div>
-  );
-}
-
-function ActiveBackground() {
-  return (
-    <div className="stadium-background" aria-hidden="true">
-      <span className="bg-orb orb-a" />
-      <span className="bg-orb orb-b" />
-      <span className="bg-orb orb-c" />
-      <span className="pitch-lines" />
-      <span className="stadium-beam beam-a" />
-      <span className="stadium-beam beam-b" />
-      <span className="crowd-glow" />
-      <div className="ball-stream">
-        <span className="ball-tracer tracer-1" />
-        <span className="ball-tracer tracer-2" />
-        <span className="ball-tracer tracer-3" />
-        <span className="ball-tracer tracer-4" />
-        <span className="ball-tracer tracer-5" />
-      </div>
-    </div>
-  );
+function modeClass(mode: UiMode): string {
+  return mode === "chaos" ? "battle-mode-chaos" : "battle-mode-tactical";
 }
 
 export default function Home() {
@@ -145,6 +35,9 @@ export default function Home() {
 
   const [searchInput, setSearchInput] = useState("");
   const [favoriteTeam, setFavoriteTeam] = useState("");
+  const [mode, setMode] = useState<UiMode>("chaos");
+  const [crowdMuted, setCrowdMuted] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
@@ -154,8 +47,8 @@ export default function Home() {
     params.append("user_id", "web_client_001");
     params.append("window_hours", String(UPCOMING_WINDOW_HOURS));
     params.append("favorite_team", favoriteTeam);
-    params.append("prefers_goals", "false");
-    params.append("prefers_tactical", "false");
+    params.append("prefers_goals", String(mode === "chaos"));
+    params.append("prefers_tactical", String(mode === "tactical"));
 
     try {
       const response = await fetch(
@@ -194,7 +87,6 @@ export default function Home() {
         new Map((data.matches ?? []).map((match) => [match.id, match])).values(),
       );
       deduped.sort((a, b) => b.score - a.score);
-
       setMatches(deduped);
     } catch (fetchError) {
       const message =
@@ -206,7 +98,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [favoriteTeam]);
+  }, [favoriteTeam, mode]);
 
   useEffect(() => {
     void fetchMatches();
@@ -216,185 +108,116 @@ export default function Home() {
     setFavoriteTeam(searchInput.trim());
   }, [searchInput]);
 
+  const rootModeClass = useMemo(() => modeClass(mode), [mode]);
+
   if (loading) {
     return (
-      <div className="stadium-page">
-        <ActiveBackground />
-        <div className="loading-center">
-          <GoalLoader />
-        </div>
+      <div className={`battlefield-shell ${rootModeClass}`}>
+        <ActiveBackground mode={mode} />
+        <LoadingSequence mode={mode} />
       </div>
     );
   }
 
   return (
-    <div className="stadium-page">
-      <ActiveBackground />
+    <div className={`battlefield-shell ${rootModeClass}`}>
+      <ActiveBackground mode={mode} />
 
-      <main className="stadium-content">
-        <header className="hero-panel">
-          <p className="hero-kicker">AI MATCHDAY ENGINE</p>
-          <h1 className="hero-title font-display">Banger Radar</h1>
-          <p className="hero-subtitle">
-            AI-scored football matches you should not miss.
+      <main id="battlefield-top" className="relative mx-auto max-w-[1320px] px-4 pb-32 pt-5 md:px-8 md:pb-12 md:pt-7">
+        <motion.header
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: "easeOut" }}
+          className="relative overflow-hidden rounded-[1.75rem] border border-white/14 bg-white/[0.07] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.42)] backdrop-blur-xl md:p-7"
+        >
+          <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[radial-gradient(circle_at_center,rgba(74,214,255,0.4),transparent_70%)] blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-24 left-0 h-56 w-56 rounded-full bg-[radial-gradient(circle_at_center,rgba(63,255,140,0.34),transparent_72%)] blur-2xl" />
+
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.32em] text-white/60 md:text-xs">
+            UEFA Broadcast Signal
+          </p>
+          <h1 className="font-display mt-2 text-[2.05rem] uppercase leading-[0.84] tracking-[0.08em] text-white drop-shadow-[0_0_18px_rgba(66,213,255,0.45)] md:text-[4.4rem]">
+            Tonight&apos;s Football Battlefield
+          </h1>
+          <p className="mt-4 max-w-[63ch] text-sm text-white/72 md:text-base">
+            Enter the tunnel. Floodlights are live. The AI engine is mapping pressure swings, knockout stakes and momentum fractures across the next battles.
           </p>
 
-          <div className="search-panel">
-            <label className="search-label" htmlFor="team-search">
-              Search your team
-            </label>
-            <div className="search-row">
-              <input
-                id="team-search"
-                list="team-options"
-                placeholder="Search your team (e.g. Alaves, Chelsea)"
-                className="search-input"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    applySearch();
-                  }
-                }}
-              />
-              <datalist id="team-options">
-                <option value="Arsenal" />
-                <option value="Aston Villa" />
-                <option value="Chelsea" />
-                <option value="Everton" />
-                <option value="Liverpool" />
-                <option value="Manchester City" />
-                <option value="Manchester United" />
-                <option value="Newcastle" />
-                <option value="Tottenham" />
-                <option value="Real Madrid" />
-                <option value="Barcelona" />
-                <option value="Atletico Madrid" />
-                <option value="Bayern Munich" />
-                <option value="Borussia Dortmund" />
-                <option value="Bayer Leverkusen" />
-                <option value="Inter" />
-                <option value="AC Milan" />
-                <option value="Juventus" />
-                <option value="Napoli" />
-                <option value="PSG" />
-              </datalist>
-              <button onClick={applySearch} className="search-button" type="button">
-                Search
-              </button>
-            </div>
+          <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(220px,auto)_auto_1fr]">
+            <NextKickoffClock matches={matches} />
+            <ModeToggles mode={mode} setMode={setMode} />
+            <CrowdNoiseToggle muted={crowdMuted} setMuted={setCrowdMuted} />
           </div>
-        </header>
 
-        {error ? (
-          <section className="state-panel state-error">
-            <p className="state-title">Failed to load matches.</p>
-            <p className="state-text">{error}</p>
-          </section>
-        ) : null}
+          <div className="mt-5">
+            <SearchPanel
+              searchInput={searchInput}
+              setSearchInput={setSearchInput}
+              onApply={applySearch}
+            />
+          </div>
+        </motion.header>
+
+        <AnimatePresence mode="wait">
+          {error ? (
+            <motion.section
+              key="error"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              className="mt-5 rounded-2xl border border-red-400/35 bg-red-900/25 p-4 text-red-100 backdrop-blur-md"
+            >
+              <p className="text-base font-semibold">Match feed unavailable.</p>
+              <p className="mt-1 text-sm text-red-100/85">{error}</p>
+            </motion.section>
+          ) : null}
+        </AnimatePresence>
 
         {!error && matches.length === 0 ? (
-          <section className="state-panel state-empty">
-            <p className="state-title">No upcoming fixtures in your window.</p>
-            <p className="state-text">
-              Try searching another team or check again closer to kickoff.
+          <section className="mt-5 rounded-2xl border border-white/12 bg-slate-900/40 p-5 text-white/85 backdrop-blur-md">
+            <p className="text-base font-semibold">No upcoming fixtures detected.</p>
+            <p className="mt-1 text-sm text-white/70">
+              Adjust the search team filter or refresh when kickoff windows are closer.
             </p>
           </section>
         ) : null}
 
         {matches.length > 0 ? (
-          <section className="cards-grid">
-            {matches.map((match, index) => {
-              const kickoff = formatKickoff(match.kickoff);
-              const rankLabel = rankLabelForIndex(index);
-              const rankTone = rankToneForIndex(index);
+          <section id="matches-feed" className="mt-6">
+            <div className="mobile-swipe no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 md:hidden">
+              {matches.map((match, index) => (
+                <div key={`mobile-${match.id}`} className="min-w-[88vw] snap-center">
+                  <MatchCard
+                    match={match}
+                    index={index}
+                    mode={mode}
+                    onOpen={setSelectedMatch}
+                  />
+                </div>
+              ))}
+            </div>
 
-              return (
-                <article
-                  key={match.id}
-                  className={`match-card ${index === 0 ? "match-card--prime" : ""}`}
+            <div className="hidden gap-5 md:grid md:grid-cols-2">
+              {matches.map((match, index) => (
+                <div
+                  key={`desktop-${match.id}`}
+                  className={index === 0 ? "md:col-span-2" : undefined}
                 >
-                  <div className="match-top">
-                    <div className="league-wrap">
-                      {match.league_logo ? (
-                        <Image
-                          src={match.league_logo}
-                          alt={match.league}
-                          width={32}
-                          height={32}
-                          className="league-logo"
-                          unoptimized
-                        />
-                      ) : (
-                        <span className="league-fallback">
-                          {toBadgeText(match.league, 3)}
-                        </span>
-                      )}
-                      <div className="league-meta">
-                        <span className="league-name">{match.league}</span>
-                        <span className="kickoff-text">
-                          {kickoff.dateText}
-                          {kickoff.timeText ? ` - ${kickoff.timeText}` : ""}
-                        </span>
-                      </div>
-                    </div>
-                    <span className={`rank-chip ${rankTone}`}>{rankLabel}</span>
-                  </div>
-
-                  <div className="match-teams">
-                    <div className="team-block">
-                      {match.home_logo ? (
-                        <Image
-                          src={match.home_logo}
-                          alt={match.home_team}
-                          width={84}
-                          height={84}
-                          className="team-logo"
-                          unoptimized
-                        />
-                      ) : (
-                        <span className="team-fallback">
-                          {toBadgeText(match.home_team, 3)}
-                        </span>
-                      )}
-                      <span className="team-name">{match.home_team}</span>
-                    </div>
-
-                    <div className="versus-block">
-                      <span className="versus-text">VS</span>
-                      <span className="hype-label">Hype Level</span>
-                      <span className="hype-value">{match.probability}</span>
-                    </div>
-
-                    <div className="team-block">
-                      {match.away_logo ? (
-                        <Image
-                          src={match.away_logo}
-                          alt={match.away_team}
-                          width={84}
-                          height={84}
-                          className="team-logo"
-                          unoptimized
-                        />
-                      ) : (
-                        <span className="team-fallback">
-                          {toBadgeText(match.away_team, 3)}
-                        </span>
-                      )}
-                      <span className="team-name">{match.away_team}</span>
-                    </div>
-                  </div>
-
-                  <div className="reason-wrap">
-                    <span className="reason-label">AI Reasoning</span>
-                    <p className="reason-text">{match.reason}</p>
-                  </div>
-                </article>
-              );
-            })}
+                  <MatchCard
+                    match={match}
+                    index={index}
+                    mode={mode}
+                    onOpen={setSelectedMatch}
+                  />
+                </div>
+              ))}
+            </div>
           </section>
         ) : null}
       </main>
+
+      <MatchModal match={selectedMatch} mode={mode} onClose={() => setSelectedMatch(null)} />
+      <MobileBottomNav />
     </div>
   );
 }
