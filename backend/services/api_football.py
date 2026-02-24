@@ -390,13 +390,19 @@ class FootballAPI:
         today = _local_today_iso()
         if date_text == today:
             self.api_budget_date = today
-            self.api_call_count = max(0, count)
+            self.api_call_count = self._sanitize_budget_count(count)
+            # Persist corrected count if file contained an out-of-range value.
+            if self.api_call_count != count:
+                self._save_api_budget()
             return
 
         self.api_budget_date = today
         self.api_call_count = 0
         self._mark_rollover_refresh_targets()
         self._save_api_budget()
+
+    def _sanitize_budget_count(self, count: int) -> int:
+        return max(0, min(self.max_daily_api_calls, int(count)))
 
     def _mark_rollover_refresh_targets(self) -> None:
         local_today = _local_now().date()
@@ -427,13 +433,19 @@ class FootballAPI:
 
         if date_text == self.api_budget_date:
             # Prefer the higher value to stay safe across concurrent processes.
-            self.api_call_count = max(self.api_call_count, max(0, count))
+            safe_disk_count = self._sanitize_budget_count(count)
+            safe_local_count = self._sanitize_budget_count(self.api_call_count)
+            merged = max(safe_local_count, safe_disk_count)
+            if merged != self.api_call_count:
+                self.api_call_count = merged
+                self._save_api_budget()
 
     def _save_api_budget(self) -> None:
         budget_dir = os.path.dirname(self.api_budget_path)
         if budget_dir:
             os.makedirs(budget_dir, exist_ok=True)
 
+        self.api_call_count = self._sanitize_budget_count(self.api_call_count)
         payload = {
             "date": self.api_budget_date,
             "count": self.api_call_count,
@@ -459,6 +471,7 @@ class FootballAPI:
     def _consume_api_budget(self) -> bool:
         self._sync_api_budget_from_disk()
         self._refresh_api_budget_if_needed()
+        self.api_call_count = self._sanitize_budget_count(self.api_call_count)
         if self.api_call_count >= self.max_daily_api_calls:
             return False
         self.api_call_count += 1
@@ -468,6 +481,7 @@ class FootballAPI:
     def budget_status(self) -> dict[str, Any]:
         self._sync_api_budget_from_disk()
         self._refresh_api_budget_if_needed()
+        self.api_call_count = self._sanitize_budget_count(self.api_call_count)
         remaining = max(0, self.max_daily_api_calls - self.api_call_count)
         return {
             "date": self.api_budget_date,
