@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: ball-knowledge-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r requirements-render.txt
+    startCommand: python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /readyz
+    autoDeploy: true
+    envVars:
+      - key: API_SPORTS_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://your-frontend-domain.com
+      - key: ENABLE_SHAP_EXPLANATIONS
+        value: "false"
+      - key: REQUEST_TIMEOUT_SECONDS
+        value: "10"
+      - key: MIN_REQUEST_INTERVAL_SECONDS
+        value: "1"
+      - key: UPCOMING_WINDOW_HOURS
+        value: "20"
+      - key: MIN_WINDOW_MATCHES
+        value: "4"
+      - key: WINDOW_EXTENSION_HOURS
+        value: "4"
+      - key: MAX_DAILY_API_CALLS
+        value: "25"
+      - key: FILTER_TARGET_LEAGUES
+        value: "true"
+      - key: PREFERENCES_DB_PATH
+        value: backend/data/preferences.db
+      - key: FIXTURES_CACHE_PATH
+        value: backend/data/fixtures_cache.json
+      - key: FIXTURES_META_PATH
+        value: backend/data/fixtures_cache_meta.json
+      - key: STANDINGS_CACHE_PATH
+        value: backend/data/standings_cache.json
+      - key: LOGO_CACHE_PATH
+        value: backend/data/logo_cache.json
+      - key: API_BUDGET_PATH
+        value: backend/data/api_budget.json
