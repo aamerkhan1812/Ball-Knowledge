@@ -1,0 +1,52 @@
+{
+  "_cache_date": "2026-02-24",
+  "leagues": {
+    "2_2025": {
+      "real madrid": {
+        "rank": 1,
+        "points": 82,
+        "form": "WWWWW"
+      },
+      "barcelona": {
+        "rank": 2,
+        "points": 79,
+        "form": "WWDWW"
+      },
+      "manchester city": {
+        "rank": 1,
+        "points": 84,
+        "form": "WWWWW"
+      },
+      "liverpool": {
+        "rank": 2,
+        "points": 80,
+        "form": "WWDWW"
+      },
+      "arsenal": {
+        "rank": 3,
+        "points": 78,
+        "form": "WDWWW"
+      },
+      "inter": {
+        "rank": 1,
+        "points": 83,
+        "form": "WWWWW"
+      },
+      "juventus": {
+        "rank": 3,
+        "points": 72,
+        "form": "WDWLW"
+      },
+      "bayern munich": {
+        "rank": 2,
+        "points": 76,
+        "form": "WWLWW"
+      },
+      "bayer leverkusen": {
+        "rank": 1,
+        "points": 81,
+        "form": "WWDWW"
+      }
+    }
+  }
+}
