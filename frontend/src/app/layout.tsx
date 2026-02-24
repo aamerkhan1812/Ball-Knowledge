@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Exo_2, Teko } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const exo2 = Exo_2({
+  variable: "--font-exo2",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const teko = Teko({
+  variable: "--font-teko",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Ball Knowledge | Match Recommender",
-  description: "AI-ranked football fixtures with explainable scoring and personalization.",
+  title: "Ball Knowledge | Banger Radar",
+  description:
+    "AI-ranked football fixtures with explainable scoring and an interactive matchday experience.",
 };
 
 export default function RootLayout({
@@ -24,9 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${exo2.variable} ${teko.variable} antialiased`}>
         {children}
       </body>
     </html>

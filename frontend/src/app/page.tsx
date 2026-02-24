@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type Match = {
   id: number;
@@ -23,8 +23,6 @@ type MatchesResponse = {
   matches: Match[];
   warnings?: string[];
   source?: string;
-  window_start?: string | null;
-  window_end?: string | null;
 };
 
 const API_BASE_URL =
@@ -37,38 +35,6 @@ const UPCOMING_WINDOW_HOURS =
   Number.isFinite(RAW_WINDOW_HOURS) && RAW_WINDOW_HOURS > 0
     ? Math.min(48, Math.max(1, Math.round(RAW_WINDOW_HOURS)))
     : 20;
-
-function formatWindowLabel(
-  windowStart?: string | null,
-  windowEnd?: string | null,
-): string {
-  if (!windowStart || !windowEnd) {
-    return `Next ${UPCOMING_WINDOW_HOURS} Hours`;
-  }
-
-  const start = new Date(windowStart);
-  const end = new Date(windowEnd);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return `Next ${UPCOMING_WINDOW_HOURS} Hours`;
-  }
-
-  const startLabel = start.toLocaleString([], {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const endLabel = end.toLocaleString([], {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return `${startLabel} to ${endLabel}`;
-}
 
 function toBadgeText(name: string, maxLength = 3): string {
   const tokens = name.trim().match(/[A-Za-z0-9]+/g) ?? [];
@@ -94,21 +60,70 @@ function toBadgeText(name: string, maxLength = 3): string {
   return firstToken.slice(0, 2).toUpperCase() || "?";
 }
 
+function formatKickoff(kickoff: string): { dateText: string; timeText: string } {
+  const kickoffDate = new Date(kickoff);
+  if (Number.isNaN(kickoffDate.getTime())) {
+    return { dateText: "Kickoff TBD", timeText: "" };
+  }
+
+  return {
+    dateText: kickoffDate.toLocaleDateString([], {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }),
+    timeText: kickoffDate.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+}
+
+function rankLabelForIndex(index: number): string {
+  if (index === 0) {
+    return "#1 Must-Watch";
+  }
+  if (index === 1) {
+    return "#2 Backup";
+  }
+  if (index === 2) {
+    return "#3 Solid Choice";
+  }
+  return "Watchlist";
+}
+
+function rankToneForIndex(index: number): string {
+  if (index === 0) {
+    return "rank-gold";
+  }
+  if (index === 1) {
+    return "rank-silver";
+  }
+  if (index === 2) {
+    return "rank-bronze";
+  }
+  return "rank-plain";
+}
+
+function GoalLoader() {
+  return (
+    <div className="goal-loader" role="status" aria-live="polite">
+      <div className="goal-frame">
+        <div className="goal-net" />
+        <div className="goal-ball" />
+      </div>
+      <p className="goal-loader-text">Whistling up your matchday feed...</p>
+    </div>
+  );
+}
+
 export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [windowLabel, setWindowLabel] = useState(
-    `Next ${UPCOMING_WINDOW_HOURS} Hours`,
-  );
 
-  const [favoriteTeamInput, setFavoriteTeamInput] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [favoriteTeam, setFavoriteTeam] = useState("");
-
-  const queryKey = useMemo(
-    () => `${favoriteTeam}|${UPCOMING_WINDOW_HOURS}`,
-    [favoriteTeam],
-  );
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
@@ -160,7 +175,6 @@ export default function Home() {
       deduped.sort((a, b) => b.score - a.score);
 
       setMatches(deduped);
-      setWindowLabel(formatWindowLabel(data.window_start, data.window_end));
     } catch (fetchError) {
       const message =
         fetchError instanceof Error
@@ -174,50 +188,63 @@ export default function Home() {
   }, [favoriteTeam]);
 
   useEffect(() => {
-    const timerId = window.setTimeout(() => {
-      void fetchMatches();
-    }, 0);
-    return () => window.clearTimeout(timerId);
-  }, [fetchMatches, queryKey]);
+    void fetchMatches();
+  }, [fetchMatches]);
 
-  const applyFilters = useCallback(() => {
-    setFavoriteTeam(favoriteTeamInput.trim());
-  }, [favoriteTeamInput]);
+  const applySearch = useCallback(() => {
+    setFavoriteTeam(searchInput.trim());
+  }, [searchInput]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
+      <div className="stadium-page">
+        <div className="stadium-background" aria-hidden="true">
+          <span className="bg-orb orb-a" />
+          <span className="bg-orb orb-b" />
+          <span className="bg-orb orb-c" />
+          <span className="pitch-lines" />
+          <span className="moving-ball" />
+        </div>
+        <div className="loading-center">
+          <GoalLoader />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 p-8 font-sans transition-all duration-500">
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-12 text-center">
-          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500 mb-4 tracking-tight">
-            Top Matches ({windowLabel})
-          </h1>
-          <p className="text-gray-400 text-lg mb-8">
+    <div className="stadium-page">
+      <div className="stadium-background" aria-hidden="true">
+        <span className="bg-orb orb-a" />
+        <span className="bg-orb orb-b" />
+        <span className="bg-orb orb-c" />
+        <span className="pitch-lines" />
+        <span className="moving-ball" />
+      </div>
+
+      <main className="stadium-content">
+        <header className="hero-panel">
+          <p className="hero-kicker">AI MATCHDAY ENGINE</p>
+          <h1 className="hero-title font-display">Banger Radar</h1>
+          <p className="hero-subtitle">
             AI-scored football matches you should not miss.
           </p>
 
-          <div className="bg-gray-900/60 p-6 rounded-2xl border border-gray-800 backdrop-blur-md max-w-2xl mx-auto flex flex-col gap-4">
-            <h3 className="text-xl font-semibold text-gray-200 text-left">
+          <div className="search-panel">
+            <label className="search-label" htmlFor="team-search">
               Search your team
-            </h3>
-
-            <div className="flex gap-4 relative">
+            </label>
+            <div className="search-row">
               <input
+                id="team-search"
                 list="team-options"
                 placeholder="Search your team (e.g. Alaves, Chelsea)"
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                value={favoriteTeamInput}
-                onChange={(event) => setFavoriteTeamInput(event.target.value)}
+                className="search-input"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
-                    applyFilters();
+                    applySearch();
                   }
                 }}
               />
@@ -243,10 +270,7 @@ export default function Home() {
                 <option value="Napoli" />
                 <option value="PSG" />
               </datalist>
-              <button
-                onClick={applyFilters}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold transition-all shadow-lg hover:shadow-blue-500/25"
-              >
+              <button onClick={applySearch} className="search-button" type="button">
                 Search
               </button>
             </div>
@@ -254,162 +278,114 @@ export default function Home() {
         </header>
 
         {error ? (
-          <div className="text-center p-10 bg-red-950/30 rounded-2xl border border-red-800">
-            <p className="text-red-300 font-semibold">Failed to load matches.</p>
-            <p className="text-red-200 text-sm mt-2">{error}</p>
-          </div>
+          <section className="state-panel state-error">
+            <p className="state-title">Failed to load matches.</p>
+            <p className="state-text">{error}</p>
+          </section>
         ) : null}
 
         {!error && matches.length === 0 ? (
-          <div className="text-center p-10 bg-gray-900/50 rounded-2xl border border-gray-800 backdrop-blur-md">
-            <p className="text-xl text-gray-500">
-              No upcoming matches found in the selected time window.
+          <section className="state-panel state-empty">
+            <p className="state-title">No upcoming fixtures in your window.</p>
+            <p className="state-text">
+              Try searching another team or check again closer to kickoff.
             </p>
-          </div>
+          </section>
         ) : null}
 
         {matches.length > 0 ? (
-          <div className="space-y-6">
+          <section className="cards-grid">
             {matches.map((match, index) => {
-              const kickoffDate = new Date(match.kickoff);
-              const kickoff = kickoffDate.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-              const kickoffDay = kickoffDate.toLocaleDateString([], {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              });
-
-              let badge = null;
-              if (index === 0) {
-                badge = (
-                  <span className="text-2xl ml-2 font-black text-yellow-400">
-                    #1 Must-Watch
-                  </span>
-                );
-              } else if (index === 1) {
-                badge = (
-                  <span className="text-2xl ml-2 font-black text-gray-300">
-                    #2 Backup
-                  </span>
-                );
-              } else if (index === 2) {
-                badge = (
-                  <span className="text-2xl ml-2 font-black text-amber-600">
-                    #3 Solid Choice
-                  </span>
-                );
-              }
+              const kickoff = formatKickoff(match.kickoff);
+              const rankLabel = rankLabelForIndex(index);
+              const rankTone = rankToneForIndex(index);
 
               return (
-                <div
+                <article
                   key={match.id}
-                  className={`relative p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] ${
-                    index === 0
-                      ? "bg-blue-900/20 border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.15)]"
-                      : "bg-gray-900/40 border-gray-800 hover:border-gray-700"
-                  }`}
+                  className={`match-card ${index === 0 ? "match-card--prime" : ""}`}
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3">
+                  <div className="match-top">
+                    <div className="league-wrap">
                       {match.league_logo ? (
                         <Image
                           src={match.league_logo}
-                          alt="League"
+                          alt={match.league}
                           width={32}
                           height={32}
-                          className="rounded-full"
+                          className="league-logo"
                           unoptimized
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-200">
+                        <span className="league-fallback">
                           {toBadgeText(match.league, 3)}
-                        </div>
+                        </span>
                       )}
-                      <span className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
-                        {match.league}
-                      </span>
-                      <span className="text-sm px-3 py-1 rounded-full bg-gray-800 text-gray-300 border border-gray-700">
-                        {kickoffDay} {kickoff}
-                      </span>
+                      <div className="league-meta">
+                        <span className="league-name">{match.league}</span>
+                        <span className="kickoff-text">
+                          {kickoff.dateText}
+                          {kickoff.timeText ? ` - ${kickoff.timeText}` : ""}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center">{badge}</div>
+                    <span className={`rank-chip ${rankTone}`}>{rankLabel}</span>
                   </div>
 
-                  <div className="flex justify-between items-center my-6 px-4">
-                    <div className="flex flex-col items-center gap-3 w-1/3">
+                  <div className="match-teams">
+                    <div className="team-block">
                       {match.home_logo ? (
                         <Image
                           src={match.home_logo}
                           alt={match.home_team}
-                          width={80}
-                          height={80}
-                          className="object-contain drop-shadow-xl"
+                          width={84}
+                          height={84}
+                          className="team-logo"
                           unoptimized
                         />
                       ) : (
-                        <div className="w-20 h-20 bg-gray-800 rounded-full border border-gray-700 flex items-center justify-center text-xl font-black text-gray-200">
+                        <span className="team-fallback">
                           {toBadgeText(match.home_team, 3)}
-                        </div>
+                        </span>
                       )}
-                      <span className="text-xl font-bold text-center">
-                        {match.home_team}
-                      </span>
+                      <span className="team-name">{match.home_team}</span>
                     </div>
 
-                    <div className="flex flex-col items-center w-1/3">
-                      <span className="text-3xl font-black text-gray-700">VS</span>
-                      <div className="mt-4 flex flex-col items-center px-2 text-center">
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">
-                          Hype Level
-                        </span>
-                        <span
-                          className={`text-sm font-bold leading-snug ${
-                            index === 0 ? "text-blue-400" : "text-gray-300"
-                          }`}
-                        >
-                          {match.probability}
-                        </span>
-                      </div>
+                    <div className="versus-block">
+                      <span className="versus-text">VS</span>
+                      <span className="hype-label">Hype Level</span>
+                      <span className="hype-value">{match.probability}</span>
                     </div>
 
-                    <div className="flex flex-col items-center gap-3 w-1/3">
+                    <div className="team-block">
                       {match.away_logo ? (
                         <Image
                           src={match.away_logo}
                           alt={match.away_team}
-                          width={80}
-                          height={80}
-                          className="object-contain drop-shadow-xl"
+                          width={84}
+                          height={84}
+                          className="team-logo"
                           unoptimized
                         />
                       ) : (
-                        <div className="w-20 h-20 bg-gray-800 rounded-full border border-gray-700 flex items-center justify-center text-xl font-black text-gray-200">
+                        <span className="team-fallback">
                           {toBadgeText(match.away_team, 3)}
-                        </div>
+                        </span>
                       )}
-                      <span className="text-xl font-bold text-center">
-                        {match.away_team}
-                      </span>
+                      <span className="team-name">{match.away_team}</span>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-800/50 flex flex-col items-start justify-center text-left">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
-                      AI Reasoning
-                    </span>
-                    <p className="text-md text-blue-300 font-semibold bg-blue-900/30 px-3 py-1.5 rounded-md border border-blue-800/50">
-                      {match.reason}
-                    </p>
+                  <div className="reason-wrap">
+                    <span className="reason-label">AI Reasoning</span>
+                    <p className="reason-text">{match.reason}</p>
                   </div>
-                </div>
+                </article>
               );
             })}
-          </div>
+          </section>
         ) : null}
-      </div>
+      </main>
     </div>
   );
 }
