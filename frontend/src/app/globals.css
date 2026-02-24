@@ -66,6 +66,15 @@ body {
   pointer-events: none;
 }
 
+.stadium-background::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 16%),
+    radial-gradient(120% 70% at 50% 115%, rgba(8, 24, 15, 0.96) 20%, transparent 68%);
+}
+
 .bg-orb {
   position: absolute;
   border-radius: 999px;
@@ -130,19 +139,133 @@ body {
   animation: pitch-scan 24s linear infinite;
 }
 
-.moving-ball {
+.stadium-beam {
   position: absolute;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  left: -10%;
-  bottom: 20%;
+  top: -52%;
+  width: 60vw;
+  height: 130vh;
+  border-radius: 999px;
   background:
-    radial-gradient(circle at 30% 30%, #ffffff 0 35%, #c6d4df 35% 55%, #253748 100%);
+    linear-gradient(
+      110deg,
+      rgba(137, 255, 210, 0.24) 0%,
+      rgba(137, 255, 210, 0.02) 42%,
+      transparent 70%
+    );
+  filter: blur(14px);
+  mix-blend-mode: screen;
+  transform-origin: top;
+  animation: beam-sweep 17s ease-in-out infinite;
+}
+
+.beam-a {
+  left: -9%;
+}
+
+.beam-b {
+  right: -8%;
+  animation-duration: 22s;
+  animation-delay: -8s;
+  opacity: 0.7;
+}
+
+.crowd-glow {
+  position: absolute;
+  inset: auto -10% -28% -10%;
+  height: 56%;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(114, 255, 198, 0.21), rgba(4, 17, 12, 0.96) 74%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(108, 255, 192, 0.05) 0,
+      rgba(108, 255, 192, 0.05) 2px,
+      transparent 2px,
+      transparent 20px
+    );
+  opacity: 0.72;
+  animation: crowd-pulse 7.5s ease-in-out infinite;
+}
+
+.ball-stream {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.ball-tracer {
+  position: absolute;
+  top: 0;
+  left: -28vw;
+  width: clamp(108px, 12vw, 172px);
+  height: 2px;
+  border-radius: 999px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(171, 255, 222, 0.1) 20%, rgba(206, 255, 236, 0.75) 100%);
+  filter: drop-shadow(0 0 9px rgba(193, 255, 229, 0.42));
+  transform-origin: left center;
+  animation: tracer-flight var(--tracer-duration) linear infinite;
+  animation-delay: var(--tracer-delay);
+}
+
+.ball-tracer::after {
+  content: "";
+  position: absolute;
+  right: -9px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 34%, #ffffff 0 36%, #d9e8f1 36% 56%, #27384a 100%);
   box-shadow:
-    0 0 0 10px rgba(255, 255, 255, 0.08),
-    0 0 22px rgba(255, 255, 255, 0.42);
-  animation: ball-glide 11s linear infinite;
+    0 0 0 7px rgba(255, 255, 255, 0.08),
+    0 0 16px rgba(221, 245, 255, 0.55);
+}
+
+.tracer-1 {
+  --tracer-duration: 15s;
+  --tracer-delay: -1s;
+  --tracer-y-start: 14vh;
+  --tracer-y-end: 4vh;
+  --tracer-rot-start: 9deg;
+  --tracer-rot-end: 2deg;
+}
+
+.tracer-2 {
+  --tracer-duration: 18s;
+  --tracer-delay: -6s;
+  --tracer-y-start: 26vh;
+  --tracer-y-end: 8vh;
+  --tracer-rot-start: 13deg;
+  --tracer-rot-end: 4deg;
+}
+
+.tracer-3 {
+  --tracer-duration: 16s;
+  --tracer-delay: -11s;
+  --tracer-y-start: 38vh;
+  --tracer-y-end: 16vh;
+  --tracer-rot-start: 12deg;
+  --tracer-rot-end: 5deg;
+}
+
+.tracer-4 {
+  --tracer-duration: 14.5s;
+  --tracer-delay: -4s;
+  --tracer-y-start: 56vh;
+  --tracer-y-end: 24vh;
+  --tracer-rot-start: 16deg;
+  --tracer-rot-end: 7deg;
+}
+
+.tracer-5 {
+  --tracer-duration: 19s;
+  --tracer-delay: -9s;
+  --tracer-y-start: 66vh;
+  --tracer-y-end: 30vh;
+  --tracer-rot-start: 14deg;
+  --tracer-rot-end: 5deg;
 }
 
 .loading-center {
@@ -659,24 +782,50 @@ body {
   }
 }
 
-@keyframes ball-glide {
+@keyframes beam-sweep {
   0% {
-    transform: translate(0, 0) scale(0.84);
-    opacity: 0;
+    transform: rotate(-20deg) translateX(0);
+    opacity: 0.2;
   }
-  8% {
-    opacity: 0.92;
-  }
-  45% {
-    transform: translate(48vw, -12vh) scale(1.08);
-  }
-  72% {
-    transform: translate(86vw, -6vh) scale(0.96);
-    opacity: 0.96;
+  50% {
+    transform: rotate(-8deg) translateX(5%);
+    opacity: 0.42;
   }
   100% {
-    transform: translate(110vw, 5vh) scale(0.8);
+    transform: rotate(-20deg) translateX(0);
+    opacity: 0.2;
+  }
+}
+
+@keyframes crowd-pulse {
+  0% {
+    opacity: 0.56;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.76;
+    transform: translateY(-1.6%);
+  }
+  100% {
+    opacity: 0.56;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tracer-flight {
+  0% {
     opacity: 0;
+    transform: translate3d(0, var(--tracer-y-start), 0) rotate(var(--tracer-rot-start)) scaleX(0.5);
+  }
+  8% {
+    opacity: 0.9;
+  }
+  78% {
+    opacity: 0.84;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(132vw, var(--tracer-y-end), 0) rotate(var(--tracer-rot-end)) scaleX(1);
   }
 }
 
