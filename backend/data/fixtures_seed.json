@@ -1,0 +1,190 @@
+{
+  "2026-02-23": [
+    {
+      "fixture": {
+        "id": 2026022301,
+        "date": "2026-02-23T17:30:00+00:00"
+      },
+      "league": {
+        "id": 135,
+        "name": "Serie A",
+        "logo": null,
+        "season": 2025,
+        "round": "Regular Season - 26"
+      },
+      "teams": {
+        "home": {
+          "name": "Fiorentina",
+          "logo": null
+        },
+        "away": {
+          "name": "Pisa",
+          "logo": null
+        }
+      }
+    },
+    {
+      "fixture": {
+        "id": 2026022302,
+        "date": "2026-02-23T19:45:00+00:00"
+      },
+      "league": {
+        "id": 135,
+        "name": "Serie A",
+        "logo": null,
+        "season": 2025,
+        "round": "Regular Season - 26"
+      },
+      "teams": {
+        "home": {
+          "name": "Bologna",
+          "logo": null
+        },
+        "away": {
+          "name": "Udinese",
+          "logo": null
+        }
+      }
+    },
+    {
+      "fixture": {
+        "id": 2026022303,
+        "date": "2026-02-23T20:00:00+00:00"
+      },
+      "league": {
+        "id": 140,
+        "name": "La Liga",
+        "logo": null,
+        "season": 2025,
+        "round": "Regular Season - 25"
+      },
+      "teams": {
+        "home": {
+          "name": "Alaves",
+          "logo": null
+        },
+        "away": {
+          "name": "Girona",
+          "logo": null
+        }
+      }
+    },
+    {
+      "fixture": {
+        "id": 2026022304,
+        "date": "2026-02-23T20:00:00+00:00"
+      },
+      "league": {
+        "id": 39,
+        "name": "Premier League",
+        "logo": null,
+        "season": 2025,
+        "round": "Regular Season - 26"
+      },
+      "teams": {
+        "home": {
+          "name": "Everton",
+          "logo": null
+        },
+        "away": {
+          "name": "Manchester United",
+          "logo": null
+        }
+      }
+    }
+  ],
+  "2026-02-24": [
+    {
+      "fixture": {
+        "id": 2026022401,
+        "date": "2026-02-24T17:45:00+00:00"
+      },
+      "league": {
+        "id": 2,
+        "name": "UEFA Champions League",
+        "logo": null,
+        "season": 2025,
+        "round": "Knockout Round Play-offs"
+      },
+      "teams": {
+        "home": {
+          "name": "Atletico Madrid",
+          "logo": null
+        },
+        "away": {
+          "name": "Club Brugge KV",
+          "logo": null
+        }
+      }
+    },
+    {
+      "fixture": {
+        "id": 2026022402,
+        "date": "2026-02-24T20:00:00+00:00"
+      },
+      "league": {
+        "id": 2,
+        "name": "UEFA Champions League",
+        "logo": null,
+        "season": 2025,
+        "round": "Knockout Round Play-offs"
+      },
+      "teams": {
+        "home": {
+          "name": "Inter",
+          "logo": null
+        },
+        "away": {
+          "name": "Bodo/Glimt",
+          "logo": null
+        }
+      }
+    },
+    {
+      "fixture": {
+        "id": 2026022403,
+        "date": "2026-02-24T20:00:00+00:00"
+      },
+      "league": {
+        "id": 2,
+        "name": "UEFA Champions League",
+        "logo": null,
+        "season": 2025,
+        "round": "Knockout Round Play-offs"
+      },
+      "teams": {
+        "home": {
+          "name": "Bayer Leverkusen",
+          "logo": null
+        },
+        "away": {
+          "name": "Olympiakos Piraeus",
+          "logo": null
+        }
+      }
+    },
+    {
+      "fixture": {
+        "id": 2026022404,
+        "date": "2026-02-24T20:00:00+00:00"
+      },
+      "league": {
+        "id": 2,
+        "name": "UEFA Champions League",
+        "logo": null,
+        "season": 2025,
+        "round": "Knockout Round Play-offs"
+      },
+      "teams": {
+        "home": {
+          "name": "Newcastle",
+          "logo": null
+        },
+        "away": {
+          "name": "Qarabag",
+          "logo": null
+        }
+      }
+    }
+  ]
+}

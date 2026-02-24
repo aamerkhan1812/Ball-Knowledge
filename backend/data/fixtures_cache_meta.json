@@ -1,0 +1,24 @@
+{
+  "2026-02-24": {
+    "status": "error",
+    "source": "live_error",
+    "match_count": 4,
+    "updated_at": "2026-02-23T22:07:22.853713+00:00",
+    "last_attempt_at": "2026-02-23T22:07:22.853713+00:00",
+    "last_error": "UEFA Champions League: {'requests': 'You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.'}; Premier League: {'requests': 'You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.'}; La Liga: {'requests': 'You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.'}; Bundesliga: {'requests': 'You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.'}; Serie A: {'requests': 'You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.'}"
+  },
+  "2026-02-25": {
+    "status": "error",
+    "source": "live_error",
+    "match_count": 0,
+    "updated_at": "2026-02-23T22:07:27.871437+00:00",
+    "last_attempt_at": "2026-02-23T22:07:27.871437+00:00",
+    "last_error": "UEFA Champions League: {'plan': 'Free plans do not have access to this date, try from 2026-02-22 to 2026-02-24.'}; Premier League: {'plan': 'Free plans do not have access to this date, try from 2026-02-22 to 2026-02-24.'}; La Liga: {'plan': 'Free plans do not have access to this date, try from 2026-02-22 to 2026-02-24.'}; Bundesliga: {'plan': 'Free plans do not have access to this date, try from 2026-02-22 to 2026-02-24.'}; Serie A: {'plan': 'Free plans do not have access to this date, try from 2026-02-22 to 2026-02-24.'}"
+  },
+  "__window_snapshot__": {
+    "status": "error",
+    "updated_at": "2026-02-24T03:18:26.797518+00:00",
+    "expires_at": "2026-02-24T03:48:26.797518+00:00",
+    "last_error": "API_SPORTS_KEY is not configured"
+  }
+}
