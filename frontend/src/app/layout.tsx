@@ -1,23 +1,25 @@
 import type { Metadata } from "next";
-import { Exo_2, Teko } from "next/font/google";
+import { Orbitron, Rajdhani } from "next/font/google";
 import "./globals.css";
 
-const exo2 = Exo_2({
-  variable: "--font-exo2",
+const rajdhani = Rajdhani({
+  variable: "--font-rajdhani",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
-const teko = Teko({
-  variable: "--font-teko",
+const orbitron = Orbitron({
+  variable: "--font-orbitron",
   subsets: ["latin"],
   display: "swap",
+  weight: ["500", "700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: "Ball Knowledge | Banger Radar",
+  title: "Ball Knowledge | Tonight's Football Battlefield",
   description:
-    "AI-ranked football fixtures with explainable scoring and an interactive matchday experience.",
+    "UEFA-night inspired AI match recommender with cinematic motion, tactical insights, and dynamic hype scoring.",
 };
 
 export default function RootLayout({
@@ -27,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${exo2.variable} ${teko.variable} antialiased`}>
+      <body className={`${rajdhani.variable} ${orbitron.variable} antialiased`}>
         {children}
       </body>
     </html>
