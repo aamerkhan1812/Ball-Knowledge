@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActiveBackground } from "@/components/battlefield/ActiveBackground";
-import { CrowdNoiseToggle } from "@/components/battlefield/CrowdNoiseToggle";
 import { LoadingSequence } from "@/components/battlefield/LoadingSequence";
 import { MatchCard } from "@/components/battlefield/MatchCard";
 import { MatchModal } from "@/components/battlefield/MatchModal";
@@ -36,7 +35,6 @@ export default function Home() {
   const [searchInput, setSearchInput] = useState("");
   const [favoriteTeam, setFavoriteTeam] = useState("");
   const [mode, setMode] = useState<UiMode>("chaos");
-  const [crowdMuted, setCrowdMuted] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
   const fetchMatches = useCallback(async () => {
@@ -133,9 +131,6 @@ export default function Home() {
           <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[radial-gradient(circle_at_center,rgba(74,214,255,0.4),transparent_70%)] blur-2xl" />
           <div className="pointer-events-none absolute -bottom-24 left-0 h-56 w-56 rounded-full bg-[radial-gradient(circle_at_center,rgba(63,255,140,0.34),transparent_72%)] blur-2xl" />
 
-          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.32em] text-white/60 md:text-xs">
-            UEFA Broadcast Signal
-          </p>
           <h1 className="font-display mt-2 text-[2.05rem] uppercase leading-[0.84] tracking-[0.08em] text-white drop-shadow-[0_0_18px_rgba(66,213,255,0.45)] md:text-[4.4rem]">
             Tonight&apos;s Football Battlefield
           </h1>
@@ -143,10 +138,9 @@ export default function Home() {
             Enter the tunnel. Floodlights are live. The AI engine is mapping pressure swings, knockout stakes and momentum fractures across the next battles.
           </p>
 
-          <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(220px,auto)_auto_1fr]">
+          <div className="mt-5 grid gap-3 md:grid-cols-[minmax(220px,auto)_1fr]">
             <NextKickoffClock matches={matches} />
             <ModeToggles mode={mode} setMode={setMode} />
-            <CrowdNoiseToggle muted={crowdMuted} setMuted={setCrowdMuted} />
           </div>
 
           <div className="mt-5">
