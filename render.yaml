@@ -1,9 +1,3 @@
-databases:
-  - name: ball-knowledge-cache-db
-    plan: free
-    databaseName: ballknowledge
-    user: ballknowledge
-
 services:
   - type: web
     name: ball-knowledge-backend
@@ -17,9 +11,7 @@ services:
       - key: API_SPORTS_KEY
         sync: false
       - key: CACHE_DATABASE_URL
-        fromDatabase:
-          name: ball-knowledge-cache-db
-          property: connectionString
+        sync: false
       - key: CORS_ORIGINS
         value: https://your-frontend-domain.com
       - key: ENABLE_SHAP_EXPLANATIONS
@@ -30,6 +22,16 @@ services:
         value: "1"
       - key: UPCOMING_WINDOW_HOURS
         value: "20"
+      - key: AUTO_SNAPSHOT_REFRESH
+        value: "true"
+      - key: SNAPSHOT_TTL_MINUTES
+        value: "1440"
+      - key: SNAPSHOT_ERROR_RETRY_MINUTES
+        value: "60"
+      - key: SNAPSHOT_ALIGN_TO_UTC_DAY
+        value: "true"
+      - key: SNAPSHOT_INCLUDE_TOMORROW_LIVE
+        value: "true"
       - key: MIN_WINDOW_MATCHES
         value: "4"
       - key: WINDOW_EXTENSION_HOURS
@@ -39,97 +41,7 @@ services:
       - key: LIVE_FETCH_ON_REQUEST
         value: "false"
       - key: MAX_DAILY_API_CALLS
-        value: "25"
-      - key: FILTER_TARGET_LEAGUES
-        value: "true"
-      - key: PREFERENCES_DB_PATH
-        value: backend/data/preferences.db
-      - key: FIXTURES_CACHE_PATH
-        value: backend/data/fixtures_cache.json
-      - key: FIXTURES_META_PATH
-        value: backend/data/fixtures_cache_meta.json
-      - key: STANDINGS_CACHE_PATH
-        value: backend/data/standings_cache.json
-      - key: LOGO_CACHE_PATH
-        value: backend/data/logo_cache.json
-      - key: API_BUDGET_PATH
-        value: backend/data/api_budget.json
-
-  - type: cron
-    name: ball-knowledge-warm-cache-rollover
-    runtime: python
-    plan: free
-    schedule: "10 0 * * *"
-    buildCommand: pip install --upgrade pip && pip install -r requirements-render.txt
-    startCommand: python backend/warm_daily_cache.py
-    envVars:
-      - key: API_SPORTS_KEY
-        sync: false
-      - key: CACHE_DATABASE_URL
-        fromDatabase:
-          name: ball-knowledge-cache-db
-          property: connectionString
-      - key: REQUEST_TIMEOUT_SECONDS
-        value: "10"
-      - key: MIN_REQUEST_INTERVAL_SECONDS
-        value: "1"
-      - key: UPCOMING_WINDOW_HOURS
-        value: "20"
-      - key: MIN_WINDOW_MATCHES
-        value: "4"
-      - key: WINDOW_EXTENSION_HOURS
-        value: "4"
-      - key: SINGLE_FETCH_PER_DATE_PER_DAY
-        value: "true"
-      - key: LIVE_FETCH_ON_REQUEST
-        value: "false"
-      - key: MAX_DAILY_API_CALLS
-        value: "25"
-      - key: FILTER_TARGET_LEAGUES
-        value: "true"
-      - key: PREFERENCES_DB_PATH
-        value: backend/data/preferences.db
-      - key: FIXTURES_CACHE_PATH
-        value: backend/data/fixtures_cache.json
-      - key: FIXTURES_META_PATH
-        value: backend/data/fixtures_cache_meta.json
-      - key: STANDINGS_CACHE_PATH
-        value: backend/data/standings_cache.json
-      - key: LOGO_CACHE_PATH
-        value: backend/data/logo_cache.json
-      - key: API_BUDGET_PATH
-        value: backend/data/api_budget.json
-
-  - type: cron
-    name: ball-knowledge-warm-cache-midday
-    runtime: python
-    plan: free
-    schedule: "10 12 * * *"
-    buildCommand: pip install --upgrade pip && pip install -r requirements-render.txt
-    startCommand: python backend/warm_daily_cache.py
-    envVars:
-      - key: API_SPORTS_KEY
-        sync: false
-      - key: CACHE_DATABASE_URL
-        fromDatabase:
-          name: ball-knowledge-cache-db
-          property: connectionString
-      - key: REQUEST_TIMEOUT_SECONDS
-        value: "10"
-      - key: MIN_REQUEST_INTERVAL_SECONDS
-        value: "1"
-      - key: UPCOMING_WINDOW_HOURS
-        value: "20"
-      - key: MIN_WINDOW_MATCHES
-        value: "4"
-      - key: WINDOW_EXTENSION_HOURS
-        value: "4"
-      - key: SINGLE_FETCH_PER_DATE_PER_DAY
-        value: "true"
-      - key: LIVE_FETCH_ON_REQUEST
-        value: "false"
-      - key: MAX_DAILY_API_CALLS
-        value: "25"
+        value: "40"
       - key: FILTER_TARGET_LEAGUES
         value: "true"
       - key: PREFERENCES_DB_PATH

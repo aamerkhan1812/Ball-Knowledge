@@ -114,12 +114,25 @@ class FootballAPI:
         self.timeout_seconds = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "10"))
         self.min_request_interval_seconds = float(os.getenv("MIN_REQUEST_INTERVAL_SECONDS", "1"))
         self.default_window_hours = _env_int("UPCOMING_WINDOW_HOURS", default=20, minimum=1, maximum=48)
+        self.auto_snapshot_refresh = _env_flag("AUTO_SNAPSHOT_REFRESH", default=True)
+        self.snapshot_ttl_minutes = _env_int(
+            "SNAPSHOT_TTL_MINUTES", default=1440, minimum=5, maximum=1440
+        )
+        self.snapshot_error_retry_minutes = _env_int(
+            "SNAPSHOT_ERROR_RETRY_MINUTES", default=60, minimum=1, maximum=240
+        )
+        self.snapshot_align_to_utc_day = _env_flag(
+            "SNAPSHOT_ALIGN_TO_UTC_DAY", default=True
+        )
+        self.snapshot_include_tomorrow_live = _env_flag(
+            "SNAPSHOT_INCLUDE_TOMORROW_LIVE", default=True
+        )
         self.min_window_matches = _env_int("MIN_WINDOW_MATCHES", default=4, minimum=1, maximum=20)
         self.window_extension_hours = _env_int("WINDOW_EXTENSION_HOURS", default=4, minimum=0, maximum=24)
         self.single_fetch_per_date_per_day = _env_flag(
             "SINGLE_FETCH_PER_DATE_PER_DAY", default=True
         )
-        self.max_daily_api_calls = _env_int("MAX_DAILY_API_CALLS", default=25, minimum=1, maximum=500)
+        self.max_daily_api_calls = _env_int("MAX_DAILY_API_CALLS", default=40, minimum=1, maximum=500)
         self.fixture_cache_refresh_minutes = _env_int(
             "FIXTURE_CACHE_REFRESH_MINUTES", default=90, minimum=5, maximum=720
         )
@@ -207,6 +220,7 @@ class FootballAPI:
         self.api_call_count = 0
         self.force_refresh_dates: set[str] = set()
         self.needs_daily_standings_warm = True
+        self.snapshot_meta_key = "__window_snapshot__"
 
         self._load_fixtures_cache()
         self._load_fixtures_meta()
@@ -836,6 +850,125 @@ class FootballAPI:
         self.fixtures_meta[date] = meta
         self._save_fixtures_meta()
 
+    def _window_snapshot_has_cache(self, today_iso: str, tomorrow_iso: str) -> bool:
+        today_cached = (
+            today_iso in self.fixtures_cache
+            and isinstance(self.fixtures_cache.get(today_iso), list)
+        )
+        tomorrow_cached = (
+            tomorrow_iso in self.fixtures_cache
+            and isinstance(self.fixtures_cache.get(tomorrow_iso), list)
+        )
+        return bool(today_cached or tomorrow_cached)
+
+    def _window_snapshot_is_stale(
+        self,
+        now_utc: dt.datetime,
+        today_iso: str,
+        tomorrow_iso: str,
+    ) -> bool:
+        if not self._window_snapshot_has_cache(today_iso, tomorrow_iso):
+            return True
+
+        meta = self.fixtures_meta.get(self.snapshot_meta_key)
+        if not isinstance(meta, dict):
+            return True
+
+        expires_at = self._parse_iso_datetime(meta.get("expires_at") or meta.get("updated_at"))
+        if expires_at is None:
+            return True
+        return now_utc >= expires_at
+
+    def _set_window_snapshot_meta(self, status: str, last_error: str | None = None) -> None:
+        now_utc = dt.datetime.now(dt.UTC)
+        if status == "success" and self.snapshot_align_to_utc_day:
+            expires_at = dt.datetime.combine(
+                now_utc.date() + dt.timedelta(days=1),
+                dt.time(hour=0, minute=0, second=0),
+                tzinfo=dt.UTC,
+            )
+        else:
+            ttl_minutes = (
+                self.snapshot_ttl_minutes
+                if status == "success"
+                else self.snapshot_error_retry_minutes
+            )
+            expires_at = now_utc + dt.timedelta(minutes=ttl_minutes)
+
+        meta: dict[str, Any] = {
+            "status": status,
+            "updated_at": now_utc.isoformat(),
+            "expires_at": expires_at.isoformat(),
+        }
+        if last_error:
+            meta["last_error"] = last_error
+
+        self.fixtures_meta[self.snapshot_meta_key] = meta
+        self._save_fixtures_meta()
+
+    def _ensure_window_snapshot(self) -> None:
+        if not self.auto_snapshot_refresh:
+            return
+
+        self._refresh_api_budget_if_needed()
+        self._refresh_shared_cache_state()
+
+        now_local = _local_now()
+        now_utc = now_local.astimezone(dt.UTC)
+        today_iso = now_local.date().isoformat()
+        tomorrow_iso = (now_local.date() + dt.timedelta(days=1)).isoformat()
+
+        if not self._window_snapshot_is_stale(now_utc, today_iso, tomorrow_iso):
+            return
+
+        if not self.api_key:
+            self._set_window_snapshot_meta(
+                "error",
+                "API_SPORTS_KEY is not configured",
+            )
+            return
+
+        refresh_errors: list[str] = []
+
+        today_payload = self.get_fixtures_by_date(today_iso, allow_live_refresh=True)
+        today_errors = today_payload.get("errors")
+        if today_errors:
+            refresh_errors.append(str(today_errors))
+        today_issues = today_payload.get("upstream_issues")
+        if isinstance(today_issues, list):
+            refresh_errors.extend([str(item) for item in today_issues if str(item).strip()])
+
+        if (
+            self.snapshot_include_tomorrow_live
+            and self._remaining_api_budget() >= len(self.target_leagues)
+        ):
+            tomorrow_payload = self.get_fixtures_by_date(tomorrow_iso, allow_live_refresh=True)
+            tomorrow_errors = tomorrow_payload.get("errors")
+            if tomorrow_errors:
+                refresh_errors.append(str(tomorrow_errors))
+            tomorrow_issues = tomorrow_payload.get("upstream_issues")
+            if isinstance(tomorrow_issues, list):
+                refresh_errors.extend(
+                    [str(item) for item in tomorrow_issues if str(item).strip()]
+                )
+        else:
+            self.get_fixtures_by_date(tomorrow_iso, allow_live_refresh=False)
+
+        self._warm_target_standings_once()
+        self._refresh_shared_cache_state()
+
+        deduped_errors = _dedupe_text(refresh_errors)
+        if self._window_snapshot_has_cache(today_iso, tomorrow_iso):
+            self._set_window_snapshot_meta(
+                "success",
+                "; ".join(deduped_errors) if deduped_errors else None,
+            )
+        else:
+            self._set_window_snapshot_meta(
+                "error",
+                "; ".join(deduped_errors) if deduped_errors else "Snapshot refresh failed",
+            )
+
     def _is_allowed_fixture_date(self, date_value: dt.date) -> tuple[bool, str | None]:
         today = _local_now().date()
         if date_value < today:
@@ -1208,6 +1341,7 @@ class FootballAPI:
         self, window_hours: int | None = None, allow_live_refresh: bool = True
     ) -> dict[str, Any]:
         self._refresh_shared_cache_state()
+        self._ensure_window_snapshot()
 
         hours = self.default_window_hours if window_hours is None else int(window_hours)
         hours = max(1, min(48, hours))
@@ -1221,17 +1355,12 @@ class FootballAPI:
         today = now_local.date()
         tomorrow = today + dt.timedelta(days=1)
 
-        # Safe-mode quota policy: only today's fixtures are fetched live.
-        # Tomorrow is cache-only, avoiding free-plan future-date request burn.
         payloads = [
-            self.get_fixtures_by_date(today.isoformat(), allow_live_refresh=allow_live_refresh),
+            self.get_fixtures_by_date(today.isoformat(), allow_live_refresh=False),
             self.get_fixtures_by_date(tomorrow.isoformat(), allow_live_refresh=False),
         ]
         date_keys = [today.isoformat(), tomorrow.isoformat()]
 
-        # One daily pass to warm standings/logo knowledge for target leagues.
-        if allow_live_refresh:
-            self._warm_target_standings_once()
         self._enrich_cached_dates_with_logo_cache(date_keys)
 
         merged_rows: list[dict[str, Any]] = []
