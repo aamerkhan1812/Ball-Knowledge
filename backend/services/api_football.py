@@ -185,7 +185,10 @@ class FootballAPI:
 
         self.base_url = "https://v3.football.api-sports.io"
         self.session = requests.Session()
-        session_headers = {"x-rapidapi-host": "v3.football.api-sports.io"}
+        # api-sports.io ONLY allows the x-apisports-key header.
+        # Any extra headers (e.g. x-rapidapi-host) cause the server to reject
+        # the request entirely — without counting it against the daily quota.
+        session_headers: dict[str, str] = {}
         if self.api_key:
             session_headers["x-apisports-key"] = self.api_key
         self.session.headers.update(session_headers)
