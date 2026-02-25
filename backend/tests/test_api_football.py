@@ -42,16 +42,30 @@ def test_today_cache_is_used_without_upstream_calls(tmp_path: Path, monkeypatch)
 
     seed_path = tmp_path / "seed.json"
     cache_path = tmp_path / "fixtures_cache.json"
+    meta_path = tmp_path / "fixtures_meta.json"
     standings_path = tmp_path / "standings_cache.json"
+    budget_path = tmp_path / "api_budget.json"
 
     seed_path.write_text(json.dumps(seed_payload), encoding="utf-8")
+    meta_path.write_text("{}", encoding="utf-8")
 
     monkeypatch.setenv("API_SPORTS_KEY", "demo-key")
     monkeypatch.setenv("FIXTURES_SEED_PATH", str(seed_path))
     monkeypatch.setenv("FIXTURES_CACHE_PATH", str(cache_path))
+    monkeypatch.setenv("FIXTURES_META_PATH", str(meta_path))
     monkeypatch.setenv("STANDINGS_CACHE_PATH", str(standings_path))
+    monkeypatch.setenv("API_BUDGET_PATH", str(budget_path))
 
     api = FootballAPI()
+
+    # Directly patch the refresh-needed decision to False: this is the cleanest
+    # way to test "when a refresh is not needed, the cache is returned without
+    # any upstream HTTP calls" — regardless of meta file state.
+    monkeypatch.setattr(
+        api,
+        "_should_attempt_live_refresh",
+        lambda date, date_value, has_cache: False,
+    )
 
     def should_not_call(*args, **kwargs):  # noqa: ANN002, ANN003
         raise AssertionError("Upstream should not be called when today cache exists")
@@ -64,16 +78,20 @@ def test_today_cache_is_used_without_upstream_calls(tmp_path: Path, monkeypatch)
     assert len(payload["response"]) == 1
 
 
+
+
 def test_historical_fetch_is_blocked_and_cache_only(tmp_path: Path, monkeypatch) -> None:
     seed_path = tmp_path / "seed.json"
     cache_path = tmp_path / "fixtures_cache.json"
     standings_path = tmp_path / "standings_cache.json"
+    budget_path = tmp_path / "api_budget.json"
     seed_path.write_text("{}", encoding="utf-8")
 
     monkeypatch.setenv("API_SPORTS_KEY", "demo-key")
     monkeypatch.setenv("FIXTURES_SEED_PATH", str(seed_path))
     monkeypatch.setenv("FIXTURES_CACHE_PATH", str(cache_path))
     monkeypatch.setenv("STANDINGS_CACHE_PATH", str(standings_path))
+    monkeypatch.setenv("API_BUDGET_PATH", str(budget_path))
 
     api = FootballAPI()
 
@@ -91,12 +109,14 @@ def test_standings_fetches_once_per_league_and_caches(tmp_path: Path, monkeypatc
     seed_path = tmp_path / "seed.json"
     cache_path = tmp_path / "fixtures_cache.json"
     standings_path = tmp_path / "standings_cache.json"
+    budget_path = tmp_path / "api_budget.json"
     seed_path.write_text("{}", encoding="utf-8")
 
     monkeypatch.setenv("API_SPORTS_KEY", "demo-key")
     monkeypatch.setenv("FIXTURES_SEED_PATH", str(seed_path))
     monkeypatch.setenv("FIXTURES_CACHE_PATH", str(cache_path))
     monkeypatch.setenv("STANDINGS_CACHE_PATH", str(standings_path))
+    monkeypatch.setenv("API_BUDGET_PATH", str(budget_path))
 
     api = FootballAPI()
     call_count = {"value": 0}

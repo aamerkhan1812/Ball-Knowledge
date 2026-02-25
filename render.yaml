@@ -12,38 +12,61 @@ services:
         sync: false
       - key: CACHE_DATABASE_URL
         sync: false
+      # -----------------------------------------------------------------------
+      # CORS — set this to your actual Vercel frontend URL, e.g.:
+      #         https://ball-knowledge.vercel.app
+      # If you have multiple origins, comma-separate them.
+      # -----------------------------------------------------------------------
       - key: CORS_ORIGINS
-        value: https://your-frontend-domain.com
+        sync: false
       - key: ENABLE_SHAP_EXPLANATIONS
         value: "false"
       - key: REQUEST_TIMEOUT_SECONDS
         value: "10"
       - key: MIN_REQUEST_INTERVAL_SECONDS
         value: "1"
+      # -----------------------------------------------------------------------
+      # Window — 30 h covers tonight AND early-hours-next-day matches for IST
+      # users; auto-extension adds 8 more h if fewer than 3 matches are found.
+      # -----------------------------------------------------------------------
       - key: UPCOMING_WINDOW_HOURS
-        value: "20"
+        value: "30"
+      - key: MIN_WINDOW_MATCHES
+        value: "3"
+      - key: WINDOW_EXTENSION_HOURS
+        value: "8"
+      # -----------------------------------------------------------------------
+      # Cache — refresh snapshot twice a day (every 12 h) so newly scheduled
+      # fixtures appear without waiting 24 h.
+      # -----------------------------------------------------------------------
       - key: AUTO_SNAPSHOT_REFRESH
         value: "true"
       - key: SNAPSHOT_TTL_MINUTES
-        value: "1440"
+        value: "720"
       - key: SNAPSHOT_ERROR_RETRY_MINUTES
         value: "60"
       - key: SNAPSHOT_ALIGN_TO_UTC_DAY
-        value: "true"
+        value: "false"
       - key: SNAPSHOT_INCLUDE_TOMORROW_LIVE
         value: "true"
-      - key: MIN_WINDOW_MATCHES
-        value: "4"
-      - key: WINDOW_EXTENSION_HOURS
-        value: "4"
       - key: SINGLE_FETCH_PER_DATE_PER_DAY
         value: "true"
+      # -----------------------------------------------------------------------
+      # API Budget — raise to 90 to safely use your 100 req/day allowance.
+      # Breakdown per day (worst case):
+      #   2× snapshot × 5 leagues = 10 fixture calls
+      #   1× standings warm × 5 leagues = 5 calls
+      #   Total = ~15 calls/day normally, max 40 on first cold boot.
+      # -----------------------------------------------------------------------
+      - key: MAX_DAILY_API_CALLS
+        value: "90"
       - key: LIVE_FETCH_ON_REQUEST
         value: "false"
-      - key: MAX_DAILY_API_CALLS
-        value: "40"
       - key: FILTER_TARGET_LEAGUES
         value: "true"
+      # -----------------------------------------------------------------------
+      # File paths (unchanged from original)
+      # -----------------------------------------------------------------------
       - key: PREFERENCES_DB_PATH
         value: backend/data/preferences.db
       - key: FIXTURES_CACHE_PATH

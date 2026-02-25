@@ -34,14 +34,97 @@ FEATURE_COLUMNS = [
     "is_late_season",
 ]
 
-FAMOUS_DERBIES = [
-    ("Real Madrid", "Barcelona"),
-    ("Manchester City", "Manchester United"),
-    ("Arsenal", "Tottenham"),
-    ("Inter", "AC Milan"),
-    ("Bayern Munich", "Borussia Dortmund"),
-    ("Liverpool", "Manchester United"),
+# ---------------------------------------------------------------------------
+# Derby / rivalry definitions
+#
+# Each tuple = (set_of_home_aliases, set_of_away_aliases, display_label)
+# A match is a derby if home_team_lower is in home_aliases AND away_team_lower
+# is in away_aliases, OR vice versa (symmetric).  Exact full-name matching
+# prevents "Inter Miami" from triggering the Inter–Milan derby.
+# ---------------------------------------------------------------------------
+RIVALRIES: list[tuple[frozenset[str], frozenset[str], str]] = [
+    # El Clasico
+    (
+        frozenset({"real madrid"}),
+        frozenset({"barcelona", "fc barcelona"}),
+        "El Clásico 🔥",
+    ),
+    # Manchester Derby
+    (
+        frozenset({"manchester city", "man city"}),
+        frozenset({"manchester united", "man utd", "man united"}),
+        "Manchester Derby",
+    ),
+    # North London Derby
+    (
+        frozenset({"arsenal"}),
+        frozenset({"tottenham", "tottenham hotspur", "spurs"}),
+        "North London Derby",
+    ),
+    # Milan Derby (Derby della Madonnina)
+    (
+        frozenset({"inter", "inter milan", "fc internazionale", "internazionale"}),
+        frozenset({"ac milan", "milan"}),
+        "Derby della Madonnina",
+    ),
+    # Der Klassiker
+    (
+        frozenset({"bayern munich", "fc bayern münchen", "fc bayern munich", "bayern münchen"}),
+        frozenset({"borussia dortmund", "bvb", "dortmund"}),
+        "Der Klassiker",
+    ),
+    # Liverpool – Man Utd
+    (
+        frozenset({"liverpool", "liverpool fc"}),
+        frozenset({"manchester united", "man utd", "man united"}),
+        "Liverpool vs Man Utd",
+    ),
+    # Merseyside Derby
+    (
+        frozenset({"liverpool", "liverpool fc"}),
+        frozenset({"everton", "everton fc"}),
+        "Merseyside Derby",
+    ),
+    # Madrid Derby
+    (
+        frozenset({"real madrid"}),
+        frozenset({"atletico madrid", "atlético madrid", "atletico de madrid"}),
+        "Madrid Derby",
+    ),
+    # Turin Derby
+    (
+        frozenset({"juventus", "juventus fc"}),
+        frozenset({"torino", "torino fc"}),
+        "Turin Derby",
+    ),
+    # Revierderby
+    (
+        frozenset({"borussia dortmund", "bvb", "dortmund"}),
+        frozenset({"fc schalke 04", "schalke", "schalke 04"}),
+        "Revierderby",
+    ),
+    # Old Firm
+    (
+        frozenset({"celtic", "celtic fc"}),
+        frozenset({"rangers", "rangers fc"}),
+        "Old Firm Derby",
+    ),
+    # Rome Derby
+    (
+        frozenset({"as roma", "roma"}),
+        frozenset({"lazio", "ss lazio"}),
+        "Derby della Capitale",
+    ),
+    # Barcelona – Atletico  (Spanish title-race clash worth flagging)
+    (
+        frozenset({"barcelona", "fc barcelona"}),
+        frozenset({"atletico madrid", "atlético madrid"}),
+        "Camp Nou Showdown",
+    ),
 ]
+
+# UCL_LEAGUE_ID for special casing
+UCL_LEAGUE_ID = 2
 
 
 def _env_flag(name: str, default: bool = False) -> bool:
@@ -55,6 +138,57 @@ def _fallback_team_stats(team_name: str) -> tuple[int, int, int]:
     points = max(0, 85 - (rank * 3) + (pseudo_hash % 10))
     form = (pseudo_hash % 15) + 1
     return rank, points, form
+
+
+def _normalise(name: str) -> str:
+    """Lower-case + strip for consistent matching."""
+    return name.strip().lower()
+
+
+def _detect_derby(home_name: str, away_name: str) -> tuple[bool, str]:
+    """Return (is_derby, display_label) using exact full-name matching."""
+    h = _normalise(home_name)
+    a = _normalise(away_name)
+
+    for home_aliases, away_aliases, label in RIVALRIES:
+        if (h in home_aliases and a in away_aliases) or (
+            a in home_aliases and h in away_aliases
+        ):
+            return True, label
+
+    return False, ""
+
+
+def _detect_knockout(round_name: str, league_id: int) -> tuple[bool, str]:
+    """Return (is_knockout, stage_label)."""
+    rn = round_name.strip().lower()
+
+    # Explicit non-knockout strings to reject first
+    if "group" in rn or "regular season" in rn or "league stage" in rn:
+        return False, ""
+
+    # Build ordered stage checks — MORE SPECIFIC patterns must come BEFORE bare "final"
+    # so that "quarter-final" / "semi-final" aren't matched by the generic "final" rule.
+    stages: list[tuple[list[str], str]] = [
+        (["semi-final", "semi final", "semifinals", "semis"], "Semi-Final"),
+        (["quarter-final", "quarter final", "quarterfinal", "quarters"], "Quarter-Final"),
+        (["round of 16", "last 16", "1/8"], "Round of 16"),
+        (["round of 32", "last 32", "1/16"], "Round of 32"),
+        (["knockout round play-off", "knockout round play off"], "Knockout Playoff"),
+        (["knockout"], "Knockout Round"),
+        (["playoff", "play-off", "play off"], "Playoff"),
+        (["elimination"], "Knockout Round"),
+        # Bare "final" — only reached if none of the above matched
+        (["final"], "Final"),
+    ]
+
+    for keywords, label in stages:
+        if any(kw in rn for kw in keywords):
+            if league_id == UCL_LEAGUE_ID:
+                return True, f"UCL {label}"
+            return True, label
+
+    return False, ""
 
 
 class MatchScorer:
@@ -110,19 +244,16 @@ class MatchScorer:
         home_team = str(teams.get("home", {}).get("name", "Unknown"))
         away_team = str(teams.get("away", {}).get("name", "Unknown"))
 
-        league_weight = 1.5 if league_id == 2 else 1.0
-        is_knockout = int(
-            any(x in round_name for x in ["knockout", "16", "quarter", "semi", "final"])
-            and "group" not in round_name
-        )
+        # UCL gets 1.5 weight, all others 1.0
+        league_weight = 1.5 if league_id == UCL_LEAGUE_ID else 1.0
 
-        is_derby = int(
-            any(
-                (t1 in home_team and t2 in away_team)
-                or (t2 in home_team and t1 in away_team)
-                for t1, t2 in FAMOUS_DERBIES
-            )
-        )
+        # Knockout detection — use full label-aware helper
+        is_knockout_bool, _ = _detect_knockout(round_name, league_id)
+        is_knockout = int(is_knockout_bool)
+
+        # Derby detection — exact-match only
+        is_derby_bool, _ = _detect_derby(home_team, away_team)
+        is_derby = int(is_derby_bool)
 
         home_rank = 10
         away_rank = 10
@@ -141,7 +272,7 @@ class MatchScorer:
             )
 
         def get_team_stats(team_name: str) -> tuple[int, int, int]:
-            key = team_name.strip().lower()
+            key = _normalise(team_name)
             if key and key in team_standings:
                 row = team_standings[key]
                 form_str = str(row.get("form", "") or "").upper()
@@ -160,7 +291,7 @@ class MatchScorer:
             matchday = int(matchday_match.group(1))
             is_late_season = int(matchday >= 30)
         else:
-            is_late_season = int(any(x in round_name for x in ["final", "semi", "quarter"]))
+            is_late_season = int(is_knockout_bool)
 
         is_relegation_battle = int(home_rank >= 15 and away_rank >= 15 and is_late_season == 1)
         is_title_race = int(home_rank <= 3 and away_rank <= 3 and is_late_season == 1)
@@ -187,13 +318,25 @@ class MatchScorer:
         features: dict[str, int | float],
         home_name: str,
         away_name: str,
+        round_name: str = "",
+        league_id: int = 0,
     ) -> list[str]:
         reasons: list[str] = []
 
-        if features["is_derby"]:
-            reasons.append("Historic rivalry matchup")
-        if features["is_knockout"]:
-            reasons.append("Knockout-stage pressure game")
+        # --- Derby with friendly name ---
+        is_derby_bool, derby_label = _detect_derby(home_name, away_name)
+        if is_derby_bool and derby_label:
+            reasons.append(derby_label)
+
+        # --- Knockout stage with UCL context ---
+        is_ko_bool, ko_label = _detect_knockout(round_name.lower(), league_id)
+        if is_ko_bool and ko_label:
+            # Extra flair for the UCL Final specifically
+            if "final" in ko_label.lower() and "semi" not in ko_label.lower():
+                reasons.append(f"🏆 {ko_label}")
+            else:
+                reasons.append(ko_label)
+
         if features["is_title_race"]:
             reasons.append("Title-race implications")
         if features["is_relegation_battle"]:
@@ -210,18 +353,18 @@ class MatchScorer:
         form_gap = int(abs(features["home_form"] - features["away_form"]))
         if form_gap >= 6:
             in_form_team = home_name if features["home_form"] > features["away_form"] else away_name
-            reasons.append(f"{in_form_team} enters with a clear form edge")
+            reasons.append(f"{in_form_team} in dominant form")
 
         if features["rank_diff"] >= 8 and features["points_gap"] >= 15:
             reasons.append("Underdog upset narrative")
 
         if features["points_gap"] <= 12 and form_gap <= 4 and features["rank_diff"] <= 8:
-            reasons.append("Likely decided by tactical details")
+            reasons.append("Decided by tactical details")
 
-        if features["is_late_season"] and features["points_gap"] <= 10:
+        if features["is_late_season"] and features["points_gap"] <= 10 and not is_ko_bool:
             reasons.append("Late-season points pressure")
 
-        if features["league_weight"] > 1:
+        if features["league_weight"] > 1 and not is_ko_bool:
             reasons.append("Elite European competition")
 
         if not reasons:
@@ -274,7 +417,9 @@ class MatchScorer:
 
             league_id = int(league.get("id", 0) or 0)
             season = int(league.get("season", 2023) or 2023)
+            round_name = str(league.get("round", "") or "")
             standings = standings_by_competition.get((league_id, season), {})
+
             features = self.extract_features(
                 match,
                 api=api,
@@ -300,13 +445,31 @@ class MatchScorer:
 
             base_score = 0.85 * ml_score + 0.15 * rule_score
 
+            # -------------------------------------------------------------------
+            # Must-Watch Tier bonus
+            # UCL knockout stage matches, named finals, and classic derbies
+            # (El Clasico, Der Klassiker) get an extra +20 must-watch bump.
+            # -------------------------------------------------------------------
+            is_derby_bool, derby_label = _detect_derby(home_name, away_name)
+            _, ko_label = _detect_knockout(round_name, league_id)
+
+            is_must_watch = (
+                bool(ko_label)                       # any knockout stage
+                or (is_derby_bool and league_id == UCL_LEAGUE_ID)  # derby in UCL
+                or (is_derby_bool and derby_label in {"El Clásico 🔥", "Der Klassiker"})
+            )
+            must_watch_bonus = 20 if is_must_watch else 0
+
+            # -------------------------------------------------------------------
+            # Personalisation bonuses
+            # -------------------------------------------------------------------
             personalization_bonus = 0
             is_fav_team = False
             is_tactical_bonus = False
             is_goals_bonus = False
 
-            home_name_lower = home_name.lower()
-            away_name_lower = away_name.lower()
+            home_name_lower = _normalise(home_name)
+            away_name_lower = _normalise(away_name)
 
             if fav_team and (fav_team in home_name_lower or fav_team in away_name_lower):
                 personalization_bonus += 40
@@ -320,16 +483,23 @@ class MatchScorer:
                 personalization_bonus += 20
                 is_tactical_bonus = True
 
-            final_score = int(np.clip(base_score + personalization_bonus, 0, 100))
+            final_score = int(
+                np.clip(base_score + must_watch_bonus + personalization_bonus, 0, 100)
+            )
+
+            # -------------------------------------------------------------------
+            # Reason assembly — personalisation first, then contextual
+            # -------------------------------------------------------------------
             reasons: list[str] = []
 
             if is_fav_team:
-                reasons.append("Your Favorite Team")
+                reasons.append("Your Favourite Team")
             if is_goals_bonus:
                 reasons.append("Heavy Goalscoring Form")
             if is_tactical_bonus:
                 reasons.append("Tight Tactical Matchup")
 
+            # SHAP explanations (when enabled)
             if self.explainer is not None:
                 try:
                     shap_values = self.explainer.shap_values(df_features[FEATURE_COLUMNS])
@@ -358,7 +528,15 @@ class MatchScorer:
                 except Exception as exc:
                     logger.warning(f"SHAP explanation failed for fixture_id={fixture_id}: {exc}")
 
-            reasons.extend(self._contextual_reasons(features, home_name, away_name))
+            reasons.extend(
+                self._contextual_reasons(
+                    features,
+                    home_name,
+                    away_name,
+                    round_name=round_name,
+                    league_id=league_id,
+                )
+            )
 
             deduped_reasons: list[str] = []
             seen: set[str] = set()
@@ -380,7 +558,7 @@ class MatchScorer:
                     "league_logo": league.get("logo"),
                     "score": final_score,
                     "probability": "",
-                    "reason": ", ".join(deduped_reasons[:2]),
+                    "reason": ", ".join(deduped_reasons[:3]),
                 }
             )
 
